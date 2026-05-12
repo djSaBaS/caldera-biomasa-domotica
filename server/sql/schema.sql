@@ -1,0 +1,2 @@
+-- Comentario: Esquema inicial pendiente de revisión.
+-- Comentario: Codex debe completar este archivo cuando se implemente backend v0.
