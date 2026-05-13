@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [0.3.1-sprint-02-hardening] - 2026-05-13
+
+### Cambiado
+
+- Sustituida la lectura `readStringUntil()` del ESP32 por acumulación no bloqueante en búfer estático.
+- Cacheado el JSON de `php://input` para evitar consumir el stream más de una vez por petición.
+- Encapsulada la creación de PDO para devolver errores genéricos sin exponer credenciales ni DSN.
+- Actualizada la API key de ejemplo del ESP32 a un placeholder documental rechazado por backend.
+
+### Seguridad
+
+- La validación de API key de dispositivo falla cerrada si `DEVICE_API_KEY` falta, está vacía, es corta o usa un placeholder público.
+- `.env.example` documenta que el valor de ejemplo debe reemplazarse por una clave larga local.
+- La prueba de humo verifica que `cambiar_en_local` devuelve HTTP 401.
+
 ## [0.3.0-sprint-02-persistencia-auth] - 2026-05-13
 
 ### Añadido

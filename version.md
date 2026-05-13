@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-**0.3.0-sprint-02-persistencia-auth**
+**0.3.1-sprint-02-hardening**
 
 ## Fecha
 
@@ -10,9 +10,12 @@
 
 ## Estado
 
-Base de desarrollo con autenticación PHP real preparada, persistencia MySQL opcional y modo degradado seguro.
+Base de desarrollo con autenticación PHP real preparada, persistencia MySQL opcional, modo degradado seguro y hardening de lectura serie/entrada HTTP.
 
 ## Incluye
+
+- Hardening Sprint 02.1: lectura serie ESP32 no bloqueante, `php://input` cacheado y conexión PDO con error seguro.
+- Rechazo de placeholders públicos como API key de dispositivo.
 
 - Documento Sprint 02.
 - Autenticación con sesiones PHP contra tabla `users`.

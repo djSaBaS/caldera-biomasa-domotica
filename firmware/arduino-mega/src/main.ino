@@ -1,5 +1,5 @@
 // Comentario: Definir versión del firmware Arduino Mega para trazabilidad.
-const char* FIRMWARE_VERSION = "0.3.0-sprint-02-persistencia-auth";
+const char* FIRMWARE_VERSION = "0.3.1-sprint-02-hardening";
 
 // Comentario: Mantener siempre activado el modo simulación durante esta fase.
 const bool SIMULATION_MODE = true;

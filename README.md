@@ -6,8 +6,8 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.3.0-sprint-02-persistencia-auth`  
-**Fecha:** 2026-05-13  
+**Versión:** `0.3.1-sprint-02-hardening`
+**Fecha:** 2026-05-13
 **Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional y modo seguro/simulado.
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
@@ -81,10 +81,10 @@ Endpoints iniciales:
 Los endpoints de dispositivo requieren cabecera:
 
 ```http
-X-API-KEY: cambiar_en_local
+X-API-KEY: clave-local-larga-generada-fuera-de-git
 ```
 
-La clave anterior es un placeholder. En desarrollo real debe configurarse en `server/.env` fuera de Git o validarse contra `devices.api_key_hash`.
+La clave debe ser larga, local y no versionada. Los placeholders públicos como `cambiar_en_local` se rechazan para fallar cerrado ante errores de configuración.
 
 ## Configuración local
 

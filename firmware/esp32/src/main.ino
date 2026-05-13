@@ -5,7 +5,7 @@
 #include <HTTPClient.h>
 
 // Comentario: Definir versión del firmware ESP32 para trazabilidad.
-const char* FIRMWARE_VERSION = "0.3.0-sprint-02-persistencia-auth";
+const char* FIRMWARE_VERSION = "0.3.1-sprint-02-hardening";
 
 // Comentario: Mantener modo simulación activado durante Sprint 01.
 const bool SIMULATION_MODE = true;
@@ -22,14 +22,17 @@ const char* WIFI_PASSWORD = "TU_PASSWORD_AQUI";
 // Comentario: Usar URL local de desarrollo como ejemplo no productivo.
 const char* API_BASE_URL = "http://192.168.1.100/server/api";
 
-// Comentario: Usar placeholder de API key para desarrollo local.
-const char* DEVICE_API_KEY = "cambiar_en_local";
+// Comentario: Usar placeholder documental que el backend rechazará hasta configurar una clave local real.
+const char* DEVICE_API_KEY = "REEMPLAZAR_POR_UNA_CLAVE_LARGA_ALEATORIA";
 
 // Comentario: Definir intervalo de envío de telemetría simulada.
 const unsigned long TELEMETRY_INTERVAL_MS = 10000;
 
 // Comentario: Definir intervalo de consulta de configuración y comandos.
 const unsigned long CONFIG_INTERVAL_MS = 30000;
+
+// Comentario: Definir tamaño máximo de línea serial para evitar crecimiento indefinido del búfer.
+const unsigned int SERIAL_BUFFER_MAX_LENGTH = 512;
 
 // Comentario: Registrar última telemetría enviada.
 unsigned long lastTelemetryMillis = 0;
@@ -85,25 +88,41 @@ void setupWifi()
 // Comentario: Leer datos seriales procedentes del Arduino Mega.
 void readFromArduino()
 {
-  // Comentario: Procesar todas las líneas disponibles sin bloqueo.
+  // Comentario: Mantener búfer estático para acumular caracteres entre iteraciones del loop.
+  static String buffer = "";
+
+  // Comentario: Procesar caracteres disponibles sin llamadas bloqueantes ni timeout interno.
   while (Serial.available() > 0) {
-    // Comentario: Leer línea delimitada por salto de línea.
-    String payload = Serial.readStringUntil('\n');
+    // Comentario: Leer un único carácter disponible en el puerto serie.
+    char character = static_cast<char>(Serial.read());
 
-    // Comentario: Limpiar espacios y saltos residuales.
-    payload.trim();
+    // Comentario: Procesar la línea completa cuando llega el salto de línea.
+    if (character == '\n') {
+      // Comentario: Normalizar espacios y retornos de carro residuales.
+      buffer.trim();
 
-    // Comentario: Ignorar líneas vacías.
-    if (payload.length() == 0) {
-      continue;
+      // Comentario: Guardar solo payloads no vacíos para envío posterior.
+      if (buffer.length() > 0) {
+        // Comentario: Actualizar último payload recibido desde Arduino.
+        lastArduinoPayload = buffer;
+
+        // Comentario: Registrar recepción para diagnóstico.
+        Serial.print("Payload Arduino recibido: ");
+        Serial.println(lastArduinoPayload);
+      }
+
+      // Comentario: Vaciar búfer después de procesar la línea completa.
+      buffer = "";
+    } else if (buffer.length() < SERIAL_BUFFER_MAX_LENGTH) {
+      // Comentario: Acumular caracteres ordinarios mientras haya espacio controlado.
+      buffer += character;
+    } else {
+      // Comentario: Reiniciar búfer ante línea excesiva para proteger memoria del ESP32.
+      buffer = "";
+
+      // Comentario: Registrar descarte por tamaño anómalo.
+      Serial.println("Linea serial descartada por superar el limite seguro");
     }
-
-    // Comentario: Guardar último payload recibido para envío posterior.
-    lastArduinoPayload = payload;
-
-    // Comentario: Registrar recepción para diagnóstico.
-    Serial.print("Payload Arduino recibido: ");
-    Serial.println(lastArduinoPayload);
   }
 }
 

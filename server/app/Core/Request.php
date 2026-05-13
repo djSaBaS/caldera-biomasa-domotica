@@ -27,7 +27,15 @@ final class Request
     // Comentario: Leer JSON del cuerpo y validar que sea un objeto asociativo.
     public static function jsonBody(): array
     {
-        // Comentario: Leer cuerpo bruto desde el stream estándar de PHP.
+        // Comentario: Cachear el payload porque `php://input` solo debe leerse una vez por petición.
+        static $cachedPayload = null;
+
+        // Comentario: Devolver el JSON previamente decodificado si otro servicio ya lo leyó.
+        if ($cachedPayload !== null) {
+            return $cachedPayload;
+        }
+
+        // Comentario: Leer cuerpo bruto desde el stream estándar de PHP una única vez.
         $rawBody = file_get_contents('php://input');
 
         // Comentario: Decodificar JSON como array asociativo.
@@ -39,8 +47,11 @@ final class Request
             JsonResponse::error('json_invalido', 'El cuerpo de la petición debe ser JSON válido.', 400);
         }
 
+        // Comentario: Guardar payload validado para lecturas posteriores dentro de la misma petición.
+        $cachedPayload = $payload;
+
         // Comentario: Devolver payload validado como array.
-        return $payload;
+        return $cachedPayload;
     }
 
     // Comentario: Obtener un parámetro de consulta saneado como texto corto.

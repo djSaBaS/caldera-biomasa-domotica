@@ -24,14 +24,14 @@ return [
         'name' => getenv('DB_NAME') ?: 'caldera_biomasa',
         // Comentario: Usuario de base de datos no productivo por defecto.
         'user' => getenv('DB_USER') ?: 'usuario_desarrollo',
-        // Comentario: Contraseña obtenida desde entorno o placeholder local.
-        'pass' => getenv('DB_PASS') ?: 'cambiar_en_local',
+        // Comentario: Contraseña obtenida desde entorno sin incluir secretos reales.
+        'pass' => getenv('DB_PASS') ?: '',
         // Comentario: Charset recomendado para español y compatibilidad completa Unicode.
         'charset' => getenv('DB_CHARSET') ?: 'utf8mb4',
     ],
     // Comentario: Agrupar configuración de seguridad sin secretos reales versionados.
     'security' => [
-        // Comentario: Clave API de dispositivo obtenida desde entorno o placeholder local.
-        'device_api_key' => getenv('DEVICE_API_KEY') ?: 'cambiar_en_local',
+        // Comentario: Clave API de dispositivo obtenida solo desde entorno configurado.
+        'device_api_key' => getenv('DEVICE_API_KEY') ?: '',
     ],
 ];

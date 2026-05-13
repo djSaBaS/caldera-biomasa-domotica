@@ -17,7 +17,7 @@ JsonResponse::success(
     [
         'estado' => 'ok',
         'proyecto' => 'caldera-biomasa-domotica',
-        'version' => '0.3.0-sprint-02-persistencia-auth',
+        'version' => '0.3.1-sprint-02-hardening',
         'modo' => 'desarrollo-seguro',
         'database_available' => $databaseAvailable,
         'endpoints' => [

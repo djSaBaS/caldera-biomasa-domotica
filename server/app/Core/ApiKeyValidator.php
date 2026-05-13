@@ -3,15 +3,21 @@
 // Comentario: Declarar tipos estrictos para comparación segura de claves.
 declare(strict_types=1);
 
-// Comentario: Centralizar validación de API key de dispositivo.
+// Comentario: Centralizar validación de API key de dispositivo con política de fallo cerrado.
 final class ApiKeyValidator
 {
+    // Comentario: Definir valores documentales que nunca deben aceptarse como credenciales reales.
+    private const PLACEHOLDER_KEYS = ['cambiar_en_local', 'REEMPLAZAR_POR_UNA_CLAVE_LARGA_ALEATORIA', 'TU_API_KEY_AQUI'];
+
+    // Comentario: Definir longitud mínima para reducir errores de configuración con claves triviales.
+    private const MINIMUM_KEY_LENGTH = 24;
+
     // Comentario: Evitar instancias de utilidad estática.
     private function __construct()
     {
     }
 
-    // Comentario: Validar cabecera `X-API-KEY` contra entorno o hash almacenado en MySQL.
+    // Comentario: Validar cabecera `X-API-KEY` contra entorno seguro o hash almacenado en MySQL.
     public static function requireValidDeviceKey(): void
     {
         // Comentario: Leer clave recibida desde cabecera HTTP.
@@ -22,11 +28,8 @@ final class ApiKeyValidator
             JsonResponse::error('api_key_invalida', 'La clave API del dispositivo no es válida.', 401);
         }
 
-        // Comentario: Leer clave esperada desde entorno con placeholder de desarrollo.
-        $expectedKey = getenv('DEVICE_API_KEY') ?: 'cambiar_en_local';
-
-        // Comentario: Aceptar clave de entorno para entornos locales sin MySQL.
-        if (hash_equals($expectedKey, $providedKey)) {
+        // Comentario: Aceptar clave de entorno solo si está configurada y no es un placeholder público.
+        if (self::isValidEnvironmentKey($providedKey)) {
             return;
         }
 
@@ -35,14 +38,42 @@ final class ApiKeyValidator
             return;
         }
 
-        // Comentario: Responder sin indicar si el dispositivo existe o no.
+        // Comentario: Responder sin indicar si falló configuración, dispositivo o secreto.
         JsonResponse::error('api_key_invalida', 'La clave API del dispositivo no es válida.', 401);
+    }
+
+    // Comentario: Validar API key configurada por entorno aplicando fallo cerrado.
+    private static function isValidEnvironmentKey(string $providedKey): bool
+    {
+        // Comentario: Leer clave esperada exclusivamente desde entorno real o `.env` local cargado.
+        $expectedKey = getenv('DEVICE_API_KEY');
+
+        // Comentario: Rechazar configuración ausente para no aceptar claves públicas por defecto.
+        if (!is_string($expectedKey) || trim($expectedKey) === '') {
+            return false;
+        }
+
+        // Comentario: Normalizar clave esperada antes de validarla.
+        $expectedKey = trim($expectedKey);
+
+        // Comentario: Rechazar placeholders documentados aunque coincidan con la cabecera recibida.
+        if (in_array($expectedKey, self::PLACEHOLDER_KEYS, true)) {
+            return false;
+        }
+
+        // Comentario: Rechazar claves demasiado cortas para reducir despliegues inseguros accidentales.
+        if (strlen($expectedKey) < self::MINIMUM_KEY_LENGTH) {
+            return false;
+        }
+
+        // Comentario: Comparar con hash_equals para evitar filtraciones temporales.
+        return hash_equals($expectedKey, $providedKey);
     }
 
     // Comentario: Validar API key usando `devices.api_key_hash` cuando MySQL está disponible.
     private static function isValidDatabaseKey(string $providedKey): bool
     {
-        // Comentario: Obtener UID de dispositivo desde query string o cuerpo JSON.
+        // Comentario: Obtener UID de dispositivo desde query string o cuerpo JSON cacheado.
         $deviceUid = self::deviceUidFromRequest();
 
         // Comentario: No validar contra base si no hay dispositivo informado.
@@ -76,7 +107,7 @@ final class ApiKeyValidator
         return password_verify($providedKey, (string) $row['api_key_hash']);
     }
 
-    // Comentario: Extraer device_id sin depender del orden de lectura del endpoint.
+    // Comentario: Extraer device_id sin leer directamente `php://input` para no consumir el stream.
     private static function deviceUidFromRequest(): string
     {
         // Comentario: Leer device_id desde query string si existe.
@@ -87,16 +118,8 @@ final class ApiKeyValidator
             return $queryDevice;
         }
 
-        // Comentario: Leer cuerpo bruto para endpoints POST.
-        $rawBody = file_get_contents('php://input') ?: '';
-
-        // Comentario: Decodificar JSON de forma tolerante.
-        $payload = json_decode($rawBody, true);
-
-        // Comentario: Rechazar cuerpos no asociativos.
-        if (!is_array($payload)) {
-            return '';
-        }
+        // Comentario: Leer cuerpo JSON mediante caché centralizada de Request.
+        $payload = Request::jsonBody();
 
         // Comentario: Devolver device_id normalizado si existe.
         return trim((string) ($payload['device_id'] ?? ''));

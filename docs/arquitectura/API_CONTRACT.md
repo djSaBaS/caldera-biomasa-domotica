@@ -90,10 +90,10 @@ La respuesta nunca revela si el email existe. En Sprint 02 no se envían correos
 El dispositivo debe enviar una clave API por cabecera:
 
 ```http
-X-API-KEY: cambiar_en_local
+X-API-KEY: clave-local-larga-generada-fuera-de-git
 ```
 
-La API key se valida contra la variable de entorno `DEVICE_API_KEY` o contra `devices.api_key_hash` si existe un `device_id` y MySQL está disponible.
+La API key se valida contra `DEVICE_API_KEY` solo si está configurada, no es un placeholder público y tiene longitud suficiente; si no, se intenta validar contra `devices.api_key_hash` cuando existe `device_id` y MySQL está disponible.
 
 ## Estado de API
 
@@ -116,7 +116,7 @@ Payload previsto:
 ```json
 {
   "device_id": "caldera-01",
-  "firmware": "0.3.0-sprint-02-persistencia-auth",
+  "firmware": "0.3.1-sprint-02-hardening",
   "state": "NORMAL",
   "water_temp": 72.5,
   "smoke_temp": 210.3,
