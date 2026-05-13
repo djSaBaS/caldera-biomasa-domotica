@@ -20,6 +20,9 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     JsonResponse::error('email_invalido', 'El formato del email no es válido.', 422);
 }
 
+// Comentario: Limitar solicitudes de restablecimiento por email/IP para evitar abuso.
+RateLimiter::requireAllowance('password_reset:' . strtolower($email), 3, 900);
+
 // Comentario: Intentar conexión real a MySQL.
 $connection = Database::tryConnection();
 

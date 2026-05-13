@@ -40,3 +40,12 @@ Se separan los endpoints de dispositivo, autenticados por API key, de los endpoi
 Motivo: las operaciones de usuarios, dispositivos y comandos remotos modifican estado crítico y no deben depender solo de que exista una cookie de sesión.
 
 Consecuencia: cualquier formulario web mutable debe enviar `X-CSRF-TOKEN`, y los comandos quedan auditados en MySQL antes de que el firmware pueda consultarlos.
+
+
+## 0008 — Rate limiting local en puntos sensibles
+
+Se añade un limitador por fichero para login, restablecimiento de contraseña y endpoints de dispositivo.
+
+Motivo: antes de exponer una API administrativa conviene reducir fuerza bruta y abuso accidental sin introducir dependencias externas todavía.
+
+Consecuencia: el mecanismo es suficiente para desarrollo y banco de pruebas, pero en producción debería sustituirse o reforzarse con Redis, proxy inverso o reglas del servidor web.

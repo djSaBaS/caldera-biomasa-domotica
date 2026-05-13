@@ -132,6 +132,38 @@ POST /api/command_request.php
 
 Requiere rol `administrador`, `operador` o `mantenimiento`, además de `X-CSRF-TOKEN`. Los comandos se guardan como pendientes y el firmware debe validarlos antes de actuar.
 
+
+## Rate limiting
+
+Los endpoints sensibles pueden devolver:
+
+```http
+429 Too Many Requests
+```
+
+Formato de error:
+
+```json
+{
+  "success": false,
+  "data": {},
+  "error": {
+    "code": "rate_limit_excedido",
+    "message": "Demasiadas peticiones. Inténtalo de nuevo más tarde.",
+    "details": {
+      "retry_after_seconds": 60
+    }
+  },
+  "meta": {}
+}
+```
+
+Límites iniciales:
+
+- Login: 5 intentos por usuario/IP cada 5 minutos.
+- Restablecimiento: 3 solicitudes por email/IP cada 15 minutos.
+- Dispositivo: 120 peticiones por API key/IP cada minuto.
+
 ## Estado de API
 
 ```http

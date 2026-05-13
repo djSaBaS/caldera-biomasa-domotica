@@ -23,6 +23,9 @@ final class ApiKeyValidator
         // Comentario: Leer clave recibida desde cabecera HTTP.
         $providedKey = Request::header('X-API-KEY');
 
+        // Comentario: Aplicar límite amplio por API key/IP para proteger endpoints de dispositivo.
+        RateLimiter::requireAllowance('device_api:' . hash('sha256', $providedKey), 120, 60);
+
         // Comentario: Rechazar clave vacía antes de comparar.
         if ($providedKey === '') {
             JsonResponse::error('api_key_invalida', 'La clave API del dispositivo no es válida.', 401);

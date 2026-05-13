@@ -15,3 +15,9 @@ server/storage/logs/*.log
 
 # Comentario: Mantener archivos informativos dentro de logs.
 !server/storage/logs/info.md
+
+# Comentario: Evitar contadores temporales de rate limit.
+server/storage/rate-limit/*.json
+
+# Comentario: Mantener documentación del rate limit local.
+!server/storage/rate-limit/info.md

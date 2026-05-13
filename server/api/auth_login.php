@@ -21,6 +21,9 @@ $userOrEmail = Validation::requiredString($payload, 'usuario', 'El usuario o ema
 // Comentario: Validar contraseña obligatoria sin registrarla en logs.
 $password = Validation::requiredString($payload, 'contrasena', 'La contraseña es obligatoria.', 255);
 
+// Comentario: Limitar intentos de login por usuario/IP para reducir fuerza bruta.
+RateLimiter::requireAllowance('auth_login:' . strtolower($userOrEmail), 5, 300);
+
 // Comentario: Intentar conexión real a MySQL.
 $connection = Database::tryConnection();
 

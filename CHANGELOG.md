@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.4.1-rate-limit-basico] - 2026-05-13
+
+### Añadido
+
+- `RateLimiter` local sin dependencias para limitar peticiones sensibles por ámbito e IP.
+- Rate limit en `auth_login.php`, `password_reset_request.php` y validación de API key de dispositivo.
+- Carpeta documentada `server/storage/rate-limit/` para contadores temporales ignorados por Git.
+
+### Seguridad
+
+- Login limitado a 5 intentos por usuario/IP cada 5 minutos.
+- Restablecimiento de contraseña limitado a 3 solicitudes por email/IP cada 15 minutos.
+- Endpoints de dispositivo limitados a 120 peticiones por API key/IP cada minuto.
+
 ## [0.4.0-admin-segura] - 2026-05-13
 
 ### Añadido

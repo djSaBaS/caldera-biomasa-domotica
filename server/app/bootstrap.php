@@ -38,6 +38,8 @@ require_once __DIR__ . '/Core/JsonResponse.php';
 require_once __DIR__ . '/Core/Request.php';
 // Comentario: Cargar helper centralizado de validación de datos.
 require_once __DIR__ . '/Core/Validation.php';
+// Comentario: Cargar limitador simple de peticiones sensibles.
+require_once __DIR__ . '/Core/RateLimiter.php';
 // Comentario: Cargar validador centralizado de API key.
 require_once __DIR__ . '/Core/ApiKeyValidator.php';
 // Comentario: Cargar protección CSRF para operaciones web autenticadas.

@@ -9,6 +9,6 @@ require_once __DIR__ . '/../app/bootstrap.php';
 // Comentario: Responder estado de backend con enlace lógico a la API.
 JsonResponse::success([
     'mensaje' => 'Backend de Caldera Biomasa Domótica operativo en modo seguro Sprint 02.',
-    'version' => '0.4.0-admin-segura',
+    'version' => '0.4.1-rate-limit-basico',
     'api' => '/api/index.php',
 ]);

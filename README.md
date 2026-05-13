@@ -6,7 +6,7 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.4.0-admin-segura`
+**Versión:** `0.4.1-rate-limit-basico`
 **Fecha:** 2026-05-13
 **Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional y modo seguro/simulado.
 
@@ -122,6 +122,17 @@ php tools/scripts/generar_hash_password.php 'una-contraseña-larga-local'
 
 Después se puede usar `server/sql/seed_development.example.sql` como plantilla, sustituyendo los placeholders por hashes generados localmente.
 
+
+
+## Rate limiting básico
+
+La API incorpora un limitador local sin dependencias para reducir abuso en puntos sensibles:
+
+- login: 5 intentos por usuario/IP cada 5 minutos,
+- restablecimiento de contraseña: 3 solicitudes por email/IP cada 15 minutos,
+- endpoints de dispositivo: 120 peticiones por API key/IP cada minuto.
+
+Los contadores se guardan en `server/storage/rate-limit/` y no se versionan.
 
 ## Administración web segura
 

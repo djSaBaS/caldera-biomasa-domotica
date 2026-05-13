@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-**0.4.0-admin-segura**
+**0.4.1-rate-limit-basico**
 
 ## Fecha
 
@@ -10,9 +10,11 @@
 
 ## Estado
 
-Base de desarrollo con autenticación PHP, administración web segura inicial, persistencia MySQL opcional, modo degradado seguro y firmware simulado.
+Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, persistencia MySQL opcional, modo degradado seguro y firmware simulado.
 
 ## Incluye
+
+- Rate limiting básico en login, restablecimiento de contraseña y endpoints de dispositivo.
 
 - Administración web segura inicial: CSRF, autorización por roles, usuarios, dispositivos y solicitud auditable de comandos.
 
