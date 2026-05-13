@@ -6,7 +6,7 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.3.1-sprint-02-hardening`
+**Versión:** `0.4.0-admin-segura`
 **Fecha:** 2026-05-13
 **Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional y modo seguro/simulado.
 
@@ -70,9 +70,13 @@ Endpoints iniciales:
 - `GET /api/auth_me.php`
 - `POST /api/auth_logout.php`
 - `POST /api/password_reset_request.php`
+- `GET /api/csrf_token.php`
+- `GET|POST /api/users.php`
+- `GET|POST /api/devices.php`
 - `POST /api/telemetry.php`
 - `GET /api/config.php?device_id=caldera-01`
 - `GET /api/command.php?device_id=caldera-01`
+- `POST /api/command_request.php`
 - `POST /api/config_ack.php`
 - `POST /api/events.php`
 - `GET|POST /api/fuel.php`
@@ -105,7 +109,10 @@ El login real usa:
 - `password_hash()` para crear hashes,
 - `password_verify()` para validar contraseñas,
 - sesiones PHP con cookie HTTP-only,
-- restablecimiento preparado mediante token hasheado.
+- restablecimiento preparado mediante token hasheado,
+- autorización por roles para endpoints administrativos,
+- protección CSRF para operaciones web mutables,
+- gestión base de usuarios y dispositivos.
 
 Para crear un hash local:
 
@@ -114,6 +121,18 @@ php tools/scripts/generar_hash_password.php 'una-contraseña-larga-local'
 ```
 
 Después se puede usar `server/sql/seed_development.example.sql` como plantilla, sustituyendo los placeholders por hashes generados localmente.
+
+
+## Administración web segura
+
+La base administrativa ya permite separar endpoints de dispositivo y endpoints de panel:
+
+- `csrf_token.php` entrega un token CSRF solo a sesiones autenticadas.
+- `users.php` exige rol `administrador` para listar, crear o editar usuarios.
+- `devices.php` exige sesión para listar y rol `administrador` con CSRF para crear o editar dispositivos.
+- `command_request.php` exige sesión, rol operativo, CSRF, MySQL disponible y dispositivo registrado.
+
+El encendido remoto (`START`) sigue bloqueado salvo que `REMOTE_START_ALLOWED=true`, y aun así el firmware debe volver a validar condiciones locales.
 
 ## Base de datos
 

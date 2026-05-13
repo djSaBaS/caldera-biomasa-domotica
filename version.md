@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-**0.3.1-sprint-02-hardening**
+**0.4.0-admin-segura**
 
 ## Fecha
 
@@ -10,9 +10,11 @@
 
 ## Estado
 
-Base de desarrollo con autenticación PHP real preparada, persistencia MySQL opcional, modo degradado seguro y hardening de lectura serie/entrada HTTP.
+Base de desarrollo con autenticación PHP, administración web segura inicial, persistencia MySQL opcional, modo degradado seguro y firmware simulado.
 
 ## Incluye
+
+- Administración web segura inicial: CSRF, autorización por roles, usuarios, dispositivos y solicitud auditable de comandos.
 
 - Hardening Sprint 02.1: lectura serie ESP32 no bloqueante, `php://input` cacheado y conexión PDO con error seguro.
 - Rechazo de placeholders públicos como API key de dispositivo.

@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## [0.4.0-admin-segura] - 2026-05-13
+
+### Añadido
+
+- Protección CSRF centralizada para operaciones web autenticadas.
+- Servicio de autorización por roles para endpoints administrativos.
+- Repositorio y endpoint `users.php` para listar, crear y editar usuarios sin exponer hashes.
+- Endpoint `devices.php` para inventario de dispositivos con API key hasheada.
+- Endpoint `csrf_token.php` para entregar token CSRF a sesiones autenticadas.
+- Endpoint `command_request.php` para crear comandos auditables desde el panel.
+
+### Cambiado
+
+- `auth_login.php` devuelve token CSRF junto a la sesión autenticada.
+- `auth_logout.php` exige sesión y token CSRF para evitar cierres inducidos.
+- `CommandRepository` permite crear comandos pendientes y registrar historial inicial.
+- El frontend conserva el token CSRF recibido tras login para operaciones posteriores.
+
+### Seguridad
+
+- El comando `START` queda bloqueado salvo `REMOTE_START_ALLOWED=true`.
+- Los comandos web requieren sesión, rol autorizado, CSRF, MySQL disponible y dispositivo registrado.
+- La API key de dispositivo nunca se devuelve al crear dispositivos.
+
 ## [0.3.1-sprint-02-hardening] - 2026-05-13
 
 ### Cambiado

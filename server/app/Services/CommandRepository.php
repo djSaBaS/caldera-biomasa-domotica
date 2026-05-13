@@ -55,4 +55,28 @@ final class CommandRepository
         // Comentario: Ejecutar actualización con identificadores enteros.
         $statement->execute(array_map('intval', $commandIds));
     }
+
+    // Comentario: Crear comando pendiente solicitado desde panel web.
+    public static function createPending(PDO $connection, array $data): int
+    {
+        // Comentario: Preparar inserción con expiración corta para reducir riesgo operativo.
+        $statement = $connection->prepare("INSERT INTO commands (device_id, requested_by, command_type, payload_json, not_before_at, expires_at) VALUES (:device_id, :requested_by, :command_type, :payload_json, NULL, DATE_ADD(NOW(), INTERVAL 5 MINUTE))");
+
+        // Comentario: Ejecutar inserción con payload ya normalizado.
+        $statement->execute($data);
+
+        // Comentario: Devolver identificador auditable del comando.
+        return (int) $connection->lastInsertId();
+    }
+
+    // Comentario: Registrar cambio de estado de comando en historial.
+    public static function addHistory(PDO $connection, int $commandId, string $status, string $message): void
+    {
+        // Comentario: Preparar inserción de historial parametrizada.
+        $statement = $connection->prepare('INSERT INTO command_history (command_id, status, message) VALUES (:command_id, :status, :message)');
+
+        // Comentario: Ejecutar inserción histórica.
+        $statement->execute(['command_id' => $commandId, 'status' => $status, 'message' => $message]);
+    }
+
 }

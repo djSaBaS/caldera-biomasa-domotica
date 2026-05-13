@@ -17,7 +17,7 @@ JsonResponse::success(
     [
         'estado' => 'ok',
         'proyecto' => 'caldera-biomasa-domotica',
-        'version' => '0.3.1-sprint-02-hardening',
+        'version' => '0.4.0-admin-segura',
         'modo' => 'desarrollo-seguro',
         'database_available' => $databaseAvailable,
         'endpoints' => [
@@ -25,6 +25,10 @@ JsonResponse::success(
             '/api/auth_me.php',
             '/api/auth_logout.php',
             '/api/password_reset_request.php',
+            '/api/command_request.php',
+            '/api/devices.php',
+            '/api/users.php',
+            '/api/csrf_token.php',
             '/api/telemetry.php',
             '/api/config.php',
             '/api/command.php',

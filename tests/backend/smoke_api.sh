@@ -37,6 +37,36 @@ curl -fsS "${API_BASE_URL}/config.php?device_id=caldera-01" \
 curl -fsS "${API_BASE_URL}/command.php?device_id=caldera-01" \
   -H "X-API-KEY: ${DEVICE_API_KEY}" >/tmp/caldera_api_command.json
 
+
+# Comentario: Probar que usuarios protegido rechaza acceso sin sesión.
+users_status=$(curl -s -o /tmp/caldera_api_users_noauth.json -w '%{http_code}' "${API_BASE_URL}/users.php")
+
+# Comentario: Fallar si usuarios permite acceso anónimo.
+if [[ "${users_status}" != "401" ]]; then
+  echo "Error: users.php permitió acceso sin sesión." >&2
+  exit 1
+fi
+
+# Comentario: Probar que dispositivos protegido rechaza acceso sin sesión.
+devices_status=$(curl -s -o /tmp/caldera_api_devices_noauth.json -w '%{http_code}' "${API_BASE_URL}/devices.php")
+
+# Comentario: Fallar si dispositivos permite acceso anónimo.
+if [[ "${devices_status}" != "401" ]]; then
+  echo "Error: devices.php permitió acceso sin sesión." >&2
+  exit 1
+fi
+
+# Comentario: Probar que solicitud web de comandos rechaza acceso sin sesión.
+command_request_status=$(curl -s -o /tmp/caldera_api_command_request_noauth.json -w '%{http_code}' -X POST "${API_BASE_URL}/command_request.php" \
+  -H 'Content-Type: application/json' \
+  -d '{"device_id":"caldera-01","command_type":"STOP"}')
+
+# Comentario: Fallar si command_request permite acceso anónimo.
+if [[ "${command_request_status}" != "401" ]]; then
+  echo "Error: command_request.php permitió acceso sin sesión." >&2
+  exit 1
+fi
+
 # Comentario: Probar solicitud de restablecimiento sin revelar usuario.
 curl -fsS -X POST "${API_BASE_URL}/password_reset_request.php" \
   -H 'Content-Type: application/json' \

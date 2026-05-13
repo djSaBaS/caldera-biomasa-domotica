@@ -9,8 +9,11 @@ require_once __DIR__ . '/../app/bootstrap.php';
 // Comentario: Permitir únicamente cierre de sesión por POST.
 Request::requireMethod(['POST']);
 
-// Comentario: Iniciar sesión para poder destruirla.
-AuthService::startSession();
+// Comentario: Exigir sesión existente antes de cerrar.
+AuthorizationService::requireAuthenticatedUser();
+
+// Comentario: Exigir CSRF para evitar cierres inducidos por terceros.
+Csrf::requireValidToken();
 
 // Comentario: Cerrar sesión actual de forma segura.
 AuthService::logout();

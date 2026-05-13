@@ -41,4 +41,5 @@ if (!is_array($user)) {
 JsonResponse::success([
     'message' => 'Autenticación correcta.',
     'user' => $user,
+    'csrf_token' => Csrf::token(),
 ]);

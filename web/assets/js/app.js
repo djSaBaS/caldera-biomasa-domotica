@@ -3,6 +3,9 @@
   // Comentario: Definir URL base de API configurable para desarrollo local.
   const API_BASE_URL = window.APP_API_BASE_URL || 'http://localhost:8081/api';
 
+  // Comentario: Mantener token CSRF entregado por backend tras login real.
+  let csrfToken = '';
+
   // Comentario: Definir KPIs simulados visibles en el dashboard.
   const kpis = [
     { etiqueta: 'Estado', valor: 'NORMAL', icono: 'bi-fire', color: 'success' },
@@ -250,8 +253,11 @@
         return;
       }
 
+      // Comentario: Guardar token CSRF si el backend lo entrega junto al login.
+      csrfToken = typeof data.data.csrf_token === 'string' ? data.data.csrf_token : '';
+
       // Comentario: Confirmar autenticación correcta.
-      mostrarResultado(resultado, `Sesión iniciada como ${data.data.user.username}.`, 'success');
+      mostrarResultado(resultado, `Sesión iniciada como ${data.data.user.username}. Token CSRF ${csrfToken ? 'preparado' : 'pendiente'}.`, 'success');
     });
   };
 

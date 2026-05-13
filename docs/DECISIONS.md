@@ -31,3 +31,12 @@ Se decide que los endpoints intenten persistir en MySQL, pero respondan de forma
 ## 0008 — API key por entorno o hash de dispositivo
 
 Se decide mantener `DEVICE_API_KEY` para desarrollo rápido y añadir validación contra `devices.api_key_hash` para preparar despliegues con claves por dispositivo sin guardar secretos en claro.
+
+
+## 0007 — Administración web con sesión, roles y CSRF
+
+Se separan los endpoints de dispositivo, autenticados por API key, de los endpoints del panel web, autenticados por sesión PHP, rol funcional y token CSRF.
+
+Motivo: las operaciones de usuarios, dispositivos y comandos remotos modifican estado crítico y no deben depender solo de que exista una cookie de sesión.
+
+Consecuencia: cualquier formulario web mutable debe enviar `X-CSRF-TOKEN`, y los comandos quedan auditados en MySQL antes de que el firmware pueda consultarlos.

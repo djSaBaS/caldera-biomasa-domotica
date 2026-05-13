@@ -22,7 +22,7 @@ if (in_array($origenHttp, $origenesPermitidos, true)) {
     // Comentario: Permitir métodos usados por los endpoints actuales.
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     // Comentario: Permitir cabeceras usadas por JSON y dispositivos.
-    header('Access-Control-Allow-Headers: Content-Type, X-API-KEY');
+    header('Access-Control-Allow-Headers: Content-Type, X-API-KEY, X-CSRF-TOKEN');
 }
 // Comentario: Responder preflight CORS sin ejecutar lógica de negocio.
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
@@ -40,6 +40,8 @@ require_once __DIR__ . '/Core/Request.php';
 require_once __DIR__ . '/Core/Validation.php';
 // Comentario: Cargar validador centralizado de API key.
 require_once __DIR__ . '/Core/ApiKeyValidator.php';
+// Comentario: Cargar protección CSRF para operaciones web autenticadas.
+require_once __DIR__ . '/Core/Csrf.php';
 // Comentario: Cargar conexión PDO preparada para consultas reales o modo degradado.
 require_once __DIR__ . '/Core/Database.php';
 // Comentario: Cargar repositorio de dispositivos.
@@ -58,3 +60,7 @@ require_once __DIR__ . '/Services/FuelRepository.php';
 require_once __DIR__ . '/Services/MaintenanceRepository.php';
 // Comentario: Cargar servicio de autenticación con sesiones PHP.
 require_once __DIR__ . '/Services/AuthService.php';
+// Comentario: Cargar autorización por roles para endpoints del panel.
+require_once __DIR__ . '/Services/AuthorizationService.php';
+// Comentario: Cargar repositorio de usuarios para administración segura.
+require_once __DIR__ . '/Services/UserRepository.php';

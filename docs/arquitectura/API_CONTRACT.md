@@ -95,6 +95,43 @@ X-API-KEY: clave-local-larga-generada-fuera-de-git
 
 La API key se valida contra `DEVICE_API_KEY` solo si está configurada, no es un placeholder público y tiene longitud suficiente; si no, se intenta validar contra `devices.api_key_hash` cuando existe `device_id` y MySQL está disponible.
 
+
+## Endpoints web autenticados
+
+### Token CSRF
+
+```http
+GET /api/csrf_token.php
+```
+
+Requiere sesión PHP autenticada. Devuelve `csrf_token` para operaciones web mutables.
+
+### Usuarios
+
+```http
+GET /api/users.php
+POST /api/users.php
+```
+
+Requiere rol `administrador`. `POST` requiere cabecera `X-CSRF-TOKEN` y permite crear o actualizar usuarios sin exponer hashes.
+
+### Dispositivos
+
+```http
+GET /api/devices.php
+POST /api/devices.php
+```
+
+`GET` requiere sesión. `POST` requiere rol `administrador` y `X-CSRF-TOKEN`. La API key inicial se guarda con `password_hash()` y no se devuelve.
+
+### Solicitud web de comandos
+
+```http
+POST /api/command_request.php
+```
+
+Requiere rol `administrador`, `operador` o `mantenimiento`, además de `X-CSRF-TOKEN`. Los comandos se guardan como pendientes y el firmware debe validarlos antes de actuar.
+
 ## Estado de API
 
 ```http
