@@ -1,0 +1,75 @@
+# Comentario: Workflow de integración continua para bloquear cambios inseguros antes de producción.
+name: CI producción
+
+# Comentario: Ejecutar controles en pull requests y pushes a ramas principales.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+# Comentario: Limitar permisos del token de GitHub Actions al mínimo necesario para lectura.
+permissions:
+  contents: read
+
+# Comentario: Definir trabajos de validación sin despliegue automático.
+jobs:
+  quality-gate:
+    # Comentario: Nombrar el job como puerta de calidad para producción.
+    name: Puerta de calidad PHP, JS, SQL y API
+    # Comentario: Usar Ubuntu mantenido por GitHub para herramientas estándar.
+    runs-on: ubuntu-latest
+    # Comentario: Fijar timeout razonable para evitar ejecuciones colgadas.
+    timeout-minutes: 10
+    steps:
+      # Comentario: Descargar el código del repositorio en el runner.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Comentario: Instalar PHP CLI para lint y pruebas unitarias sin Composer.
+      - name: Preparar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      # Comentario: Instalar Node.js para validación sintáctica del frontend.
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Comentario: Ejecutar lint, pruebas unitarias y validaciones estáticas del repositorio.
+      - name: Ejecutar puerta de calidad
+        run: tests/backend/run_quality_checks.sh
+
+      # Comentario: Levantar backend PHP embebido para pruebas de humo HTTP sin MySQL obligatorio.
+      - name: Arrancar API local
+        env:
+          DEVICE_API_KEY: clave-local-pruebas-hardening-no-productiva-123456
+        run: |
+          php -S 127.0.0.1:8091 -t server > /tmp/caldera-api.log 2>&1 &
+          echo $! > /tmp/caldera-api.pid
+          sleep 1
+
+      # Comentario: Ejecutar prueba de humo contra API real con clave no productiva de CI.
+      - name: Ejecutar smoke API
+        env:
+          API_BASE_URL: http://127.0.0.1:8091/api
+          DEVICE_API_KEY: clave-local-pruebas-hardening-no-productiva-123456
+        run: tests/backend/smoke_api.sh
+
+      # Comentario: Mostrar log de backend solo si falla alguna prueba HTTP.
+      - name: Mostrar log API si falla
+        if: failure()
+        run: cat /tmp/caldera-api.log || true
+
+      # Comentario: Detener servidor embebido aunque el job haya fallado.
+      - name: Detener API local
+        if: always()
+        run: |
+          if [ -f /tmp/caldera-api.pid ]; then
+            kill "$(cat /tmp/caldera-api.pid)" || true
+          fi

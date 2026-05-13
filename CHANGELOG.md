@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.4.2-demo-ci-tests] - 2026-05-13
+
+### Añadido
+
+- Seed SQL `server/sql/seed_demo_preview.sql` con datos ficticios para previsualización del panel en modo demo.
+- Pruebas unitarias iniciales para catálogo de configuración y política de API key.
+- Validador estático del seed demo y runner local `tests/backend/run_quality_checks.sh`.
+- Workflow `.github/workflows/ci.yml` con lint PHP, JS, Bash, pruebas unitarias, validación de seed y smoke test HTTP.
+
+### Seguridad
+
+- El seed demo usa hashes ficticios no productivos y documenta que no debe usarse como credencial real.
+- CI rechaza placeholders o cambios básicos que rompan lint, tests o contrato mínimo demo.
+
 ## [0.4.1-rate-limit-basico] - 2026-05-13
 
 ### Añadido

@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-**0.4.1-rate-limit-basico**
+**0.4.2-demo-ci-tests**
 
 ## Fecha
 
@@ -10,9 +10,12 @@
 
 ## Estado
 
-Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, persistencia MySQL opcional, modo degradado seguro y firmware simulado.
+Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, seed demo de previsualización, tests iniciales, CI, persistencia MySQL opcional, modo degradado seguro y firmware simulado.
 
 ## Incluye
+
+- Seed demo SQL para previsualización con datos ficticios de telemetría, eventos, combustible y mantenimiento.
+- Puerta de calidad local y workflow CI para lint, pruebas unitarias, validación de seed y smoke API.
 
 - Rate limiting básico en login, restablecimiento de contraseña y endpoints de dispositivo.
 
@@ -41,7 +44,7 @@ Base de desarrollo con autenticación PHP, administración web segura inicial, r
 - Añadir CSRF para formularios web autenticados.
 - Implementar alta/edición real de usuarios desde panel.
 - Crear migraciones versionadas en lugar de un único `schema.sql`.
-- Añadir tests unitarios e integración con base de datos efímera.
+- Ampliar cobertura de tests unitarios e incorporar integración con base de datos efímera.
 - Validar sensores reales en banco.
 - Revisar la lógica original contra manuales antes de activar hardware.
 - Definir inventario final de sensores.

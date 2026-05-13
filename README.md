@@ -6,9 +6,9 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.4.1-rate-limit-basico`
+**Versión:** `0.4.2-demo-ci-tests`
 **Fecha:** 2026-05-13
-**Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional y modo seguro/simulado.
+**Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional, datos demo, tests iniciales y CI.
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
@@ -43,7 +43,7 @@ firmware/esp32/             Conectividad WiFi/HTTP simulada y puente serie.
 server/api/                 Endpoints PHP consumidos por dispositivo y panel.
 server/app/                 Núcleo PHP común, configuración, repositorios y servicios.
 server/public/              Entrada pública mínima del backend.
-server/sql/                 Esquema SQL inicial y seed de desarrollo de ejemplo.
+server/sql/                 Esquema SQL inicial, seed de desarrollo y seed demo de previsualización.
 server/storage/             Logs y almacenamiento futuro.
 web/                        Panel Bootstrap mobile-first.
 tools/                      Scripts auxiliares.
@@ -159,6 +159,20 @@ El seed local de ejemplo está en:
 server/sql/seed_development.example.sql
 ```
 
+El seed de previsualización demo está en:
+
+```text
+server/sql/seed_demo_preview.sql
+```
+
+Para cargarlo en un entorno local con MySQL ya inicializado:
+
+```bash
+mysql -u usuario_desarrollo -p caldera_biomasa < server/sql/seed_demo_preview.sql
+```
+
+El usuario demo es `demo_admin` y la clave usada para generar el hash documentado es ficticia y no productiva. Si se reutiliza este seed en una demo compartida, conviene regenerar hashes locales antes de exponer el entorno.
+
 Incluye tablas para usuarios, roles, dispositivos, telemetría, configuración, comandos, eventos, alarmas, combustible, mantenimiento, notificaciones y ajustes del sistema.
 
 ## Frontend
@@ -202,6 +216,18 @@ firmware/esp32/src/main.ino
 Incluye `SIMULATION_MODE = true`, placeholders WiFi, envío HTTP simulado, consulta simulada de configuración y comandos, y puente serie preparado.
 
 ## Cómo probar en desarrollo
+
+### Ejecutar puerta de calidad local
+
+```bash
+tests/backend/run_quality_checks.sh
+```
+
+### Ejecutar pruebas unitarias backend
+
+```bash
+php tests/backend/run_unit_tests.php
+```
 
 ### Validar sintaxis PHP
 
