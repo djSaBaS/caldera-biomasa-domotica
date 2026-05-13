@@ -1,7 +1,22 @@
-// Comentario: Definir la versión inicial del firmware de Arduino Mega.
-const char* FIRMWARE_VERSION = "0.1.0-inicial";
+// Comentario: Definir versión del firmware Arduino Mega para trazabilidad.
+const char* FIRMWARE_VERSION = "0.2.0-sprint-01-base";
 
-// Comentario: Definir los estados principales de la caldera siguiendo la lógica original.
+// Comentario: Mantener siempre activado el modo simulación durante esta fase.
+const bool SIMULATION_MODE = true;
+
+// Comentario: Definir intervalo base del bucle principal sin usar delay().
+const unsigned long LOOP_INTERVAL_MS = 100;
+
+// Comentario: Definir intervalo de telemetría simulada hacia ESP32.
+const unsigned long TELEMETRY_INTERVAL_MS = 5000;
+
+// Comentario: Definir ciclo inicial del sinfín con tiempo ON igual a OFF.
+const unsigned long AUGER_CYCLE_MS = 10000;
+
+// Comentario: Definir temperatura de seguridad simulada.
+const float SAFETY_TEMP_C = 90.0;
+
+// Comentario: Enumerar estados originales que deben respetarse.
 enum BoilerState {
   STATE_OFF,
   STATE_CHECK,
@@ -15,125 +30,283 @@ enum BoilerState {
   STATE_ALT
 };
 
-// Comentario: Guardar el estado actual de la caldera.
+// Comentario: Agrupar sensores críticos simulados.
+struct SensorState {
+  float waterTempC;
+  float smokeTempC;
+  int fuelLevelPct;
+  bool doorClosed;
+  bool safetyThermostatOk;
+  bool criticalSensorOk;
+};
+
+// Comentario: Agrupar salidas simuladas para impedir activación física accidental.
+struct OutputState {
+  bool augerActive;
+  bool igniterActive;
+  bool pumpActive;
+  int fanPrimaryPct;
+  int fanSecondaryPct;
+};
+
+// Comentario: Guardar estado actual de la caldera.
 BoilerState currentState = STATE_OFF;
 
-// Comentario: Guardar la última marca temporal usada por el bucle principal.
+// Comentario: Guardar sensores simulados con valores seguros.
+SensorState sensors = {72.5, 210.0, 78, true, true, true};
+
+// Comentario: Guardar salidas simuladas inicialmente apagadas.
+OutputState outputs = {false, false, false, 0, 0};
+
+// Comentario: Registrar última ejecución del bucle lógico.
 unsigned long lastLoopMillis = 0;
 
-// Comentario: Configurar el intervalo base del bucle principal en milisegundos.
-const unsigned long LOOP_INTERVAL_MS = 100;
+// Comentario: Registrar última telemetría enviada.
+unsigned long lastTelemetryMillis = 0;
 
-// Comentario: Inicializar el firmware y dejar la caldera en estado seguro.
+// Comentario: Registrar última conmutación del sinfín simulado.
+unsigned long lastAugerToggleMillis = 0;
+
+// Comentario: Registrar si existe alarma activa.
+bool alarmActive = false;
+
+// Comentario: Inicializar firmware en estado seguro.
 void setup()
 {
-  // Comentario: Inicializar comunicación serie para depuración y comunicación futura con ESP32.
+  // Comentario: Inicializar comunicación serie con ESP32 y monitor de depuración.
   Serial.begin(115200);
 
-  // Comentario: Registrar arranque del firmware.
-  Serial.println("Firmware Arduino Mega iniciado");
+  // Comentario: Esperar brevemente a que el puerto serie esté disponible en placas compatibles.
+  while (!Serial) {
+    // Comentario: Mantener espera corta únicamente durante arranque de depuración.
+    ;
+  }
 
-  // Comentario: Establecer estado inicial seguro.
+  // Comentario: Registrar versión y modo de seguridad.
+  Serial.println("Arduino Mega iniciado en modo simulacion segura");
+
+  // Comentario: Forzar estado inicial apagado.
   currentState = STATE_OFF;
+
+  // Comentario: Forzar salidas apagadas al arrancar.
+  forceOutputsOff();
 }
 
-// Comentario: Ejecutar el bucle principal no bloqueante del firmware.
+// Comentario: Ejecutar bucle principal no bloqueante.
 void loop()
 {
-  // Comentario: Leer el tiempo actual del microcontrolador.
+  // Comentario: Capturar tiempo actual del microcontrolador.
   unsigned long currentMillis = millis();
 
-  // Comentario: Evitar ejecución excesiva del bucle lógico.
+  // Comentario: Evitar que la lógica principal se ejecute demasiado rápido.
   if (currentMillis - lastLoopMillis < LOOP_INTERVAL_MS) {
     return;
   }
 
-  // Comentario: Actualizar la última ejecución del bucle lógico.
+  // Comentario: Actualizar marca temporal del bucle lógico.
   lastLoopMillis = currentMillis;
 
-  // Comentario: Leer sensores críticos en futuras iteraciones.
-  readSensors();
+  // Comentario: Leer sensores simulados antes de evaluar seguridad.
+  readSensors(currentMillis);
 
-  // Comentario: Evaluar seguridad antes de actuar sobre salidas.
+  // Comentario: Evaluar seguridad antes de cambiar estados o salidas.
   evaluateSafety();
 
-  // Comentario: Ejecutar la máquina de estados de la caldera.
-  runStateMachine();
+  // Comentario: Ejecutar máquina de estados respetando prioridad de alarma.
+  runStateMachine(currentMillis);
 
-  // Comentario: Aplicar salidas físicas según estado y seguridad.
-  applyOutputs();
+  // Comentario: Aplicar salidas en simulación segura.
+  applyOutputs(currentMillis);
 
-  // Comentario: Enviar estado hacia el ESP32 en futuras iteraciones.
-  sendStatusToEsp32();
+  // Comentario: Enviar telemetría periódica hacia ESP32.
+  sendStatusToEsp32(currentMillis);
 }
 
-// Comentario: Preparar función de lectura de sensores.
-void readSensors()
+// Comentario: Convertir estado enumerado a texto original.
+const char* stateToText(BoilerState state)
 {
-  // Comentario: Pendiente de implementar lectura de temperatura de agua, humos, puerta, pellet y seguridad.
-}
-
-// Comentario: Preparar función de evaluación de seguridad.
-void evaluateSafety()
-{
-  // Comentario: Pendiente de implementar comprobaciones críticas.
-}
-
-// Comentario: Preparar función principal de máquina de estados.
-void runStateMachine()
-{
-  // Comentario: Evaluar el estado actual de la caldera.
-  switch (currentState) {
-    case STATE_OFF:
-      // Comentario: Estado seguro sin demanda de funcionamiento.
-      break;
-
-    case STATE_CHECK:
-      // Comentario: Estado de chequeo previo.
-      break;
-
-    case STATE_ACC:
-      // Comentario: Estado de encendido.
-      break;
-
-    case STATE_STB:
-      // Comentario: Estado de estabilización.
-      break;
-
-    case STATE_NORMAL:
-      // Comentario: Estado de regulación normal.
-      break;
-
-    case STATE_MOD:
-      // Comentario: Estado de modulación.
-      break;
-
-    case STATE_MAN:
-      // Comentario: Estado de automantenimiento.
-      break;
-
-    case STATE_SIC:
-      // Comentario: Estado de seguridad.
-      break;
-
-    case STATE_SPE:
-      // Comentario: Estado de apagado controlado.
-      break;
-
-    case STATE_ALT:
-      // Comentario: Estado de alarma.
-      break;
+  // Comentario: Seleccionar texto estable para API y logs.
+  switch (state) {
+    case STATE_OFF: return "OFF";
+    case STATE_CHECK: return "CHECK";
+    case STATE_ACC: return "ACC";
+    case STATE_STB: return "STB";
+    case STATE_NORMAL: return "NORMAL";
+    case STATE_MOD: return "MOD";
+    case STATE_MAN: return "MAN";
+    case STATE_SIC: return "SIC";
+    case STATE_SPE: return "SPE";
+    case STATE_ALT: return "ALT";
+    default: return "ALT";
   }
 }
 
-// Comentario: Preparar función de aplicación de salidas.
-void applyOutputs()
+// Comentario: Simular lectura de sensores sin hardware real.
+void readSensors(unsigned long currentMillis)
 {
-  // Comentario: Pendiente de implementar control de relés, dimmers y LCD.
+  // Comentario: Calcular oscilación suave para pruebas visuales.
+  float simulatedWave = (currentMillis % 60000UL) / 60000.0;
+
+  // Comentario: Mantener temperatura de agua dentro de rango normal simulado.
+  sensors.waterTempC = 68.0 + (simulatedWave * 8.0);
+
+  // Comentario: Mantener temperatura de humos dentro de rango operativo simulado.
+  sensors.smokeTempC = 180.0 + (simulatedWave * 60.0);
+
+  // Comentario: Mantener nivel de combustible decreciente simulado sin llegar a cero.
+  sensors.fuelLevelPct = 78;
 }
 
-// Comentario: Preparar función de envío de estado al ESP32.
-void sendStatusToEsp32()
+// Comentario: Evaluar reglas críticas de seguridad local.
+void evaluateSafety()
 {
-  // Comentario: Pendiente de implementar protocolo Arduino-ESP32.
+  // Comentario: Detectar fallo de sensor crítico.
+  bool sensorFailure = !sensors.criticalSensorOk;
+
+  // Comentario: Detectar sobretemperatura de agua.
+  bool overTemperature = sensors.waterTempC >= SAFETY_TEMP_C;
+
+  // Comentario: Detectar puerta abierta o termostato de seguridad disparado.
+  bool safetyChainOpen = !sensors.doorClosed || !sensors.safetyThermostatOk;
+
+  // Comentario: Activar alarma si cualquier condición crítica aparece.
+  alarmActive = sensorFailure || overTemperature || safetyChainOpen;
+
+  // Comentario: Pasar a ALT si existe alarma activa.
+  if (alarmActive) {
+    currentState = STATE_ALT;
+  }
+}
+
+// Comentario: Ejecutar máquina de estados inicial sin inventar combustión nueva.
+void runStateMachine(unsigned long currentMillis)
+{
+  // Comentario: Ignorar temporizador si existe alarma activa.
+  if (alarmActive) {
+    return;
+  }
+
+  // Comentario: Simular avance de estados solo para panel y pruebas.
+  unsigned long phase = (currentMillis / 15000UL) % 5UL;
+
+  // Comentario: Seleccionar fase simulada sin activar hardware real.
+  if (phase == 0UL) {
+    currentState = STATE_OFF;
+  } else if (phase == 1UL) {
+    currentState = STATE_CHECK;
+  } else if (phase == 2UL) {
+    currentState = STATE_ACC;
+  } else if (phase == 3UL) {
+    currentState = STATE_STB;
+  } else {
+    currentState = STATE_NORMAL;
+  }
+}
+
+// Comentario: Aplicar salidas simuladas sin energizar pines físicos.
+void applyOutputs(unsigned long currentMillis)
+{
+  // Comentario: Apagar todo si hay alarma o modo simulación impide salidas reales.
+  if (alarmActive || SIMULATION_MODE) {
+    // Comentario: Mantener bomba simulada si temperatura supera umbral y no hay alarma.
+    outputs.pumpActive = !alarmActive && sensors.waterTempC >= 60.0;
+
+    // Comentario: Calcular ventiladores simulados solo en estados operativos.
+    outputs.fanPrimaryPct = isCombustionState() ? 55 : 0;
+
+    // Comentario: Calcular ventilador secundario simulado solo en estados operativos.
+    outputs.fanSecondaryPct = isCombustionState() ? 45 : 0;
+
+    // Comentario: Mantener bujía simulada únicamente en ACC.
+    outputs.igniterActive = currentState == STATE_ACC && !alarmActive;
+
+    // Comentario: Actualizar sinfín temporizado en simulación.
+    updateAugerCycle(currentMillis);
+
+    // Comentario: Salir sin escribir pines físicos.
+    return;
+  }
+
+  // Comentario: En fases futuras se escribirán pines físicos tras validaciones adicionales.
+  forceOutputsOff();
+}
+
+// Comentario: Actualizar ciclo temporizado del sinfín con ON igual a OFF.
+void updateAugerCycle(unsigned long currentMillis)
+{
+  // Comentario: Desactivar sinfín fuera de estados de combustión o ante alarma.
+  if (!isCombustionState() || alarmActive) {
+    outputs.augerActive = false;
+    lastAugerToggleMillis = currentMillis;
+    return;
+  }
+
+  // Comentario: Conmutar sinfín cuando se cumple el periodo configurado.
+  if (currentMillis - lastAugerToggleMillis >= AUGER_CYCLE_MS) {
+    outputs.augerActive = !outputs.augerActive;
+    lastAugerToggleMillis = currentMillis;
+  }
+}
+
+// Comentario: Determinar si el estado permite combustión simulada.
+bool isCombustionState()
+{
+  // Comentario: Permitir simulación en ACC, STB, NORMAL, MOD y MAN.
+  return currentState == STATE_ACC || currentState == STATE_STB || currentState == STATE_NORMAL || currentState == STATE_MOD || currentState == STATE_MAN;
+}
+
+// Comentario: Forzar todas las salidas simuladas a estado apagado.
+void forceOutputsOff()
+{
+  // Comentario: Desactivar sinfín.
+  outputs.augerActive = false;
+
+  // Comentario: Desactivar bujía.
+  outputs.igniterActive = false;
+
+  // Comentario: Desactivar bomba.
+  outputs.pumpActive = false;
+
+  // Comentario: Desactivar ventilador primario.
+  outputs.fanPrimaryPct = 0;
+
+  // Comentario: Desactivar ventilador secundario.
+  outputs.fanSecondaryPct = 0;
+}
+
+// Comentario: Enviar estado JSON compacto hacia ESP32 por serie.
+void sendStatusToEsp32(unsigned long currentMillis)
+{
+  // Comentario: Respetar intervalo de telemetría para no saturar comunicación serie.
+  if (currentMillis - lastTelemetryMillis < TELEMETRY_INTERVAL_MS) {
+    return;
+  }
+
+  // Comentario: Actualizar marca temporal de último envío.
+  lastTelemetryMillis = currentMillis;
+
+  // Comentario: Construir telemetría JSON manual simple para evitar dependencias.
+  Serial.print("{\"device_id\":\"caldera-01\",\"firmware\":\"");
+  Serial.print(FIRMWARE_VERSION);
+  Serial.print("\",\"simulation\":");
+  Serial.print(SIMULATION_MODE ? "true" : "false");
+  Serial.print(",\"state\":\"");
+  Serial.print(stateToText(currentState));
+  Serial.print("\",\"water_temp\":");
+  Serial.print(sensors.waterTempC, 1);
+  Serial.print(",\"smoke_temp\":");
+  Serial.print(sensors.smokeTempC, 1);
+  Serial.print(",\"fuel_level\":");
+  Serial.print(sensors.fuelLevelPct);
+  Serial.print(",\"auger\":");
+  Serial.print(outputs.augerActive ? "true" : "false");
+  Serial.print(",\"igniter\":");
+  Serial.print(outputs.igniterActive ? "true" : "false");
+  Serial.print(",\"pump\":");
+  Serial.print(outputs.pumpActive ? "true" : "false");
+  Serial.print(",\"fan_primary_pct\":");
+  Serial.print(outputs.fanPrimaryPct);
+  Serial.print(",\"fan_secondary_pct\":");
+  Serial.print(outputs.fanSecondaryPct);
+  Serial.println("}");
 }
