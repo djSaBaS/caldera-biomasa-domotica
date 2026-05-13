@@ -16,25 +16,43 @@ ApiKeyValidator::requireValidDeviceKey();
 $payload = Request::jsonBody();
 
 // Comentario: Validar identificador de dispositivo.
-$deviceId = trim((string) ($payload['device_id'] ?? ''));
+$deviceUid = Validation::requiredString($payload, 'device_id', 'El campo device_id es obligatorio.', 80);
 
 // Comentario: Validar resultado informado por firmware.
-$status = trim((string) ($payload['status'] ?? ''));
+$status = Validation::allowedString($payload, 'status', ['aplicada', 'rechazada'], 'El ACK debe indicar status aplicada o rechazada.');
 
-// Comentario: Rechazar ACK incompleto.
-if ($deviceId === '' || !in_array($status, ['aplicada', 'rechazada'], true)) {
-    JsonResponse::error('ack_invalido', 'El ACK debe incluir device_id y status aplicada/rechazada.', 422);
+// Comentario: Intentar persistir ACK como evento de configuración.
+$connection = Database::tryConnection();
+
+// Comentario: Preparar metadatos de persistencia.
+$meta = ['persistence' => 'skipped'];
+
+// Comentario: Guardar evento si hay base y dispositivo registrado.
+if ($connection instanceof PDO) {
+    $deviceId = DeviceRepository::findIdByUid($connection, $deviceUid);
+
+    // Comentario: Insertar evento asociado si el dispositivo existe.
+    if ($deviceId !== null) {
+        $eventId = EventRepository::store($connection, $deviceId, [
+            'event_type' => 'configuracion',
+            'severity' => $status === 'aplicada' ? 'info' : 'aviso',
+            'origin' => 'firmware',
+            'title' => 'ACK de configuración ' . $status,
+            'message' => (string) ($payload['message'] ?? ''),
+        ]);
+
+        // Comentario: Informar evento persistido.
+        $meta = ['persistence' => 'stored', 'event_id' => $eventId];
+    }
 }
 
-// Comentario: Confirmar recepción del ACK sin asumir aplicación real.
+// Comentario: Confirmar recepción del ACK.
 JsonResponse::success(
     [
-        'device_id' => $deviceId,
+        'device_id' => $deviceUid,
         'status' => $status,
-        'message' => 'ACK de configuración recibido para trazabilidad futura.',
+        'message' => 'ACK de configuración recibido.',
     ],
-    [
-        'simulation' => true,
-    ],
+    $meta,
     202
 );

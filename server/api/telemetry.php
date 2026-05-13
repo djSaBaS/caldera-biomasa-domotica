@@ -16,12 +16,7 @@ ApiKeyValidator::requireValidDeviceKey();
 $payload = Request::jsonBody();
 
 // Comentario: Validar identificador de dispositivo obligatorio.
-$deviceId = trim((string) ($payload['device_id'] ?? ''));
-
-// Comentario: Rechazar telemetría sin identificador de dispositivo.
-if ($deviceId === '') {
-    JsonResponse::error('device_id_requerido', 'El campo device_id es obligatorio.', 422);
-}
+$deviceUid = Validation::requiredString($payload, 'device_id', 'El campo device_id es obligatorio.', 80);
 
 // Comentario: Validar estado de caldera contra estados originales conocidos.
 $state = strtoupper(trim((string) ($payload['state'] ?? 'OFF')));
@@ -34,15 +29,37 @@ if (!in_array($state, $allowedStates, true)) {
     JsonResponse::error('estado_invalido', 'El estado de caldera recibido no está permitido.', 422);
 }
 
-// Comentario: Responder confirmación segura sin persistencia obligatoria en esta fase.
+// Comentario: Intentar conexión a MySQL para persistencia real.
+$connection = Database::tryConnection();
+
+// Comentario: Preparar metadatos iniciales de persistencia.
+$meta = ['persistence' => 'skipped'];
+
+// Comentario: Guardar telemetría si existe base y dispositivo registrado.
+if ($connection instanceof PDO) {
+    // Comentario: Buscar dispositivo interno por UID.
+    $deviceId = DeviceRepository::findIdByUid($connection, $deviceUid);
+
+    // Comentario: Persistir solo si el dispositivo está registrado.
+    if ($deviceId !== null) {
+        // Comentario: Guardar muestra de telemetría validada.
+        $telemetryId = TelemetryRepository::store($connection, $deviceId, $payload, $state);
+
+        // Comentario: Actualizar metadatos de persistencia real.
+        $meta = ['persistence' => 'stored', 'telemetry_id' => $telemetryId];
+    } else {
+        // Comentario: Informar modo degradado por dispositivo no registrado.
+        $meta = ['persistence' => 'skipped', 'reason' => 'device_not_registered'];
+    }
+}
+
+// Comentario: Responder confirmación segura de telemetría.
 JsonResponse::success(
     [
-        'message' => 'Telemetría validada en modo base; persistencia MySQL preparada para la siguiente fase.',
-        'device_id' => $deviceId,
+        'message' => 'Telemetría validada.',
+        'device_id' => $deviceUid,
         'state' => $state,
     ],
-    [
-        'simulation' => true,
-    ],
+    $meta,
     202
 );

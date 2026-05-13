@@ -28,6 +28,63 @@ En caso de error:
 }
 ```
 
+## Modo de persistencia
+
+Los endpoints intentan usar MySQL mediante PDO. Si MySQL no está disponible, algunos endpoints responden en modo degradado seguro con `meta.persistence = "skipped"` o `meta.source = "fallback_safe"`.
+
+Este modo degradado sirve para desarrollo, no para producción.
+
+## Autenticación de usuarios
+
+### Login
+
+```http
+POST /api/auth_login.php
+```
+
+Payload:
+
+```json
+{
+  "usuario": "admin",
+  "contrasena": "contraseña-local"
+}
+```
+
+Requiere que exista un usuario activo en `users` con `password_hash` válido.
+
+### Usuario actual
+
+```http
+GET /api/auth_me.php
+```
+
+Devuelve la sesión PHP autenticada.
+
+### Logout
+
+```http
+POST /api/auth_logout.php
+```
+
+Cierra la sesión PHP actual.
+
+### Solicitud de restablecimiento
+
+```http
+POST /api/password_reset_request.php
+```
+
+Payload:
+
+```json
+{
+  "email": "admin@example.com"
+}
+```
+
+La respuesta nunca revela si el email existe. En Sprint 02 no se envían correos reales.
+
 ## Autenticación de dispositivo
 
 El dispositivo debe enviar una clave API por cabecera:
@@ -36,7 +93,7 @@ El dispositivo debe enviar una clave API por cabecera:
 X-API-KEY: cambiar_en_local
 ```
 
-La clave del ejemplo no es real y debe configurarse fuera de Git.
+La API key se valida contra la variable de entorno `DEVICE_API_KEY` o contra `devices.api_key_hash` si existe un `device_id` y MySQL está disponible.
 
 ## Estado de API
 
@@ -44,7 +101,7 @@ La clave del ejemplo no es real y debe configurarse fuera de Git.
 GET /api/index.php
 ```
 
-Devuelve versión, estado y endpoints disponibles.
+Devuelve versión, estado, disponibilidad de base de datos y endpoints disponibles.
 
 ## Telemetría
 
@@ -59,7 +116,7 @@ Payload previsto:
 ```json
 {
   "device_id": "caldera-01",
-  "firmware": "0.2.0-sprint-01-base",
+  "firmware": "0.3.0-sprint-02-persistencia-auth",
   "state": "NORMAL",
   "water_temp": 72.5,
   "smoke_temp": 210.3,
@@ -70,10 +127,11 @@ Payload previsto:
     "fan_primary_pct": 60,
     "fan_secondary_pct": 40,
     "pump": true
-  },
-  "alarms": []
+  }
 }
 ```
+
+Si MySQL está disponible y el dispositivo está registrado, se inserta en `telemetry`.
 
 ## Configuración
 
@@ -83,7 +141,7 @@ GET /api/config.php?device_id=caldera-01
 
 Requiere `X-API-KEY`.
 
-Devuelve configuración activa y catálogo de parámetros con unidad, mínimo, máximo y explicación.
+Devuelve configuración persistida en `boiler_config` o fallback seguro.
 
 Regla crítica:
 
@@ -106,7 +164,7 @@ Comandos previstos:
 - `ENTER_MAINTENANCE`
 - `EXIT_MAINTENANCE`
 
-En Sprint 01 la cola se devuelve vacía para evitar activaciones remotas reales.
+Los comandos se leen de MySQL si existe dispositivo registrado, pero `remote_start_enabled` sigue siendo `false` como recordatorio de seguridad.
 
 ## ACK de configuración
 
@@ -127,10 +185,7 @@ Payload previsto:
 }
 ```
 
-`status` puede ser:
-
-- `aplicada`
-- `rechazada`
+`status` puede ser `aplicada` o `rechazada`.
 
 ## Eventos
 
@@ -147,6 +202,16 @@ Severidades:
 - `error`
 - `critico`
 
+Tipos:
+
+- `estado`
+- `configuracion`
+- `orden`
+- `comunicacion`
+- `sensor`
+- `mantenimiento`
+- `sistema`
+
 ## Combustible
 
 ```http
@@ -159,6 +224,8 @@ Tipos de combustible:
 - `pellet`
 - `hueso_aceituna`
 - `otro`
+
+`POST` registra compras si MySQL está disponible.
 
 ## Mantenimiento
 
@@ -174,9 +241,11 @@ Tipos de mantenimiento:
 - `pieza`
 - `reparacion`
 
+`POST` requiere `device_id` registrado si MySQL está disponible.
+
 ## Reglas de seguridad
 
-- El backend valida rangos.
+- El backend valida rangos y catálogos.
 - El firmware vuelve a validar rangos.
 - El firmware puede rechazar cualquier configuración peligrosa.
 - Los comandos remotos nunca deben saltarse sensores críticos.

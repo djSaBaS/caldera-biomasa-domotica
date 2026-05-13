@@ -1,12 +1,17 @@
-# Información de carpeta: tests/backend
+# Pruebas backend
 
-## Propósito
+Esta carpeta contiene pruebas de humo y pruebas futuras del backend PHP.
 
-Pruebas futuras de backend.
+## Prueba disponible
 
-## Normas
+```bash
+tests/backend/smoke_api.sh
+```
 
-- Mantener nombres claros.
-- Documentar cambios relevantes.
-- No guardar credenciales reales.
-- Mantener coherencia con la documentación de `docs/`.
+La prueba requiere un servidor PHP levantado, por ejemplo:
+
+```bash
+php -S localhost:8081 -t server
+```
+
+La variable `API_BASE_URL` permite apuntar a otro puerto durante CI o pruebas locales.

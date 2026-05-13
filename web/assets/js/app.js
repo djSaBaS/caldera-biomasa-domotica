@@ -1,5 +1,8 @@
 // Comentario: Encapsular el panel para evitar variables globales accidentales.
 (() => {
+  // Comentario: Definir URL base de API configurable para desarrollo local.
+  const API_BASE_URL = window.APP_API_BASE_URL || 'http://localhost:8081/api';
+
   // Comentario: Definir KPIs simulados visibles en el dashboard.
   const kpis = [
     { etiqueta: 'Estado', valor: 'NORMAL', icono: 'bi-fire', color: 'success' },
@@ -195,6 +198,117 @@
     });
   };
 
+
+
+  // Comentario: Enviar credenciales al backend PHP real preparado en Sprint 02.
+  const activarLogin = () => {
+    // Comentario: Localizar formulario de acceso.
+    const form = document.querySelector('#formLogin');
+
+    // Comentario: Localizar zona de resultado del login.
+    const resultado = document.querySelector('#loginResultado');
+
+    // Comentario: Evitar errores si el formulario no existe.
+    if (!form || !resultado) {
+      return;
+    }
+
+    // Comentario: Registrar envío del formulario con fetch.
+    form.addEventListener('submit', async (event) => {
+      // Comentario: Evitar recarga completa de página.
+      event.preventDefault();
+
+      // Comentario: Construir payload con nombres esperados por PHP.
+      const payload = {
+        usuario: document.querySelector('#usuario')?.value.trim() || '',
+        contrasena: document.querySelector('#contrasena')?.value || '',
+      };
+
+      // Comentario: Mostrar estado de autenticación en progreso.
+      mostrarResultado(resultado, 'Validando credenciales contra backend PHP...', 'secondary');
+
+      // Comentario: Enviar credenciales al endpoint real de autenticación.
+      const respuesta = await fetch(`${API_BASE_URL}/auth_login.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      }).catch(() => null);
+
+      // Comentario: Informar si no se puede contactar con backend.
+      if (!respuesta) {
+        mostrarResultado(resultado, 'No se pudo contactar con el backend PHP.', 'warning');
+        return;
+      }
+
+      // Comentario: Decodificar respuesta JSON del backend.
+      const data = await respuesta.json().catch(() => null);
+
+      // Comentario: Mostrar error funcional sin exponer detalles sensibles.
+      if (!respuesta.ok || !data?.success) {
+        mostrarResultado(resultado, data?.error?.message || 'Autenticación no completada.', 'danger');
+        return;
+      }
+
+      // Comentario: Confirmar autenticación correcta.
+      mostrarResultado(resultado, `Sesión iniciada como ${data.data.user.username}.`, 'success');
+    });
+  };
+
+  // Comentario: Preparar solicitud de restablecimiento de contraseña sin seguridad falsa.
+  const activarRestablecimiento = () => {
+    // Comentario: Localizar botón de restablecimiento.
+    const boton = document.querySelector('#btnRestablecer');
+
+    // Comentario: Localizar zona de resultado.
+    const resultado = document.querySelector('#loginResultado');
+
+    // Comentario: Evitar errores si faltan elementos.
+    if (!boton || !resultado) {
+      return;
+    }
+
+    // Comentario: Registrar solicitud de restablecimiento.
+    boton.addEventListener('click', async () => {
+      // Comentario: Leer email o usuario escrito en el campo usuario.
+      const email = document.querySelector('#usuario')?.value.trim() || '';
+
+      // Comentario: Validar que haya un email básico antes de llamar a la API.
+      if (!email.includes('@')) {
+        mostrarResultado(resultado, 'Introduce el email en el campo usuario para preparar el restablecimiento.', 'warning');
+        return;
+      }
+
+      // Comentario: Enviar solicitud al endpoint preparado.
+      const respuesta = await fetch(`${API_BASE_URL}/password_reset_request.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }).catch(() => null);
+
+      // Comentario: Informar fallo de comunicación.
+      if (!respuesta) {
+        mostrarResultado(resultado, 'No se pudo contactar con el backend PHP.', 'warning');
+        return;
+      }
+
+      // Comentario: Decodificar respuesta de restablecimiento.
+      const data = await respuesta.json().catch(() => null);
+
+      // Comentario: Mostrar mensaje genérico sin revelar existencia del email.
+      mostrarResultado(resultado, data?.data?.message || 'Solicitud procesada.', respuesta.ok ? 'info' : 'danger');
+    });
+  };
+
+  // Comentario: Mostrar un mensaje Bootstrap reutilizable.
+  const mostrarResultado = (elemento, mensaje, tipo) => {
+    // Comentario: Limpiar clases de alerta anteriores.
+    elemento.className = `alert alert-${tipo} mt-3 mb-0`;
+
+    // Comentario: Escribir mensaje controlado desde aplicación.
+    elemento.textContent = mensaje;
+  };
+
   // Comentario: Ejecutar inicialización cuando el DOM esté listo.
   document.addEventListener('DOMContentLoaded', () => {
     // Comentario: Renderizar KPIs simulados.
@@ -208,6 +322,12 @@
 
     // Comentario: Activar navegación interna.
     activarNavegacion();
+
+    // Comentario: Activar login real preparado contra PHP.
+    activarLogin();
+
+    // Comentario: Activar flujo preparado de restablecimiento de contraseña.
+    activarRestablecimiento();
 
     // Comentario: Registrar carga correcta en consola para diagnóstico.
     console.info('Panel Bootstrap mobile-first cargado en modo simulación segura.');

@@ -24,21 +24,26 @@ final class Database
 
         // Comentario: Cargar configuración desde variables de entorno con valores seguros de desarrollo.
         $host = getenv('DB_HOST') ?: 'localhost';
+
         // Comentario: Cargar puerto MySQL desde entorno o usar el estándar.
         $port = getenv('DB_PORT') ?: '3306';
+
         // Comentario: Cargar nombre de base de datos desde entorno.
         $name = getenv('DB_NAME') ?: 'caldera_biomasa';
-        // Comentario: Cargar charset esperado para español y emojis técnicos.
+
+        // Comentario: Cargar charset esperado para español y compatibilidad Unicode.
         $charset = getenv('DB_CHARSET') ?: 'utf8mb4';
+
         // Comentario: Cargar usuario de base de datos sin hardcodear credenciales reales.
         $user = getenv('DB_USER') ?: 'usuario_desarrollo';
+
         // Comentario: Cargar contraseña desde entorno con placeholder no productivo.
         $pass = getenv('DB_PASS') ?: 'cambiar_en_local';
 
         // Comentario: Construir DSN PDO específico de MySQL.
         $dsn = "mysql:host={$host};port={$port};dbname={$name};charset={$charset}";
 
-        // Comentario: Configurar PDO para errores por excepción y fetch asociativo.
+        // Comentario: Configurar PDO para errores por excepción y consultas preparadas reales.
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -50,5 +55,18 @@ final class Database
 
         // Comentario: Devolver conexión lista para consultas preparadas.
         return self::$connection;
+    }
+
+    // Comentario: Intentar conexión sin romper endpoints cuando la base no está importada.
+    public static function tryConnection(): ?PDO
+    {
+        // Comentario: Capturar fallos de infraestructura para permitir modo degradado seguro.
+        try {
+            // Comentario: Reutilizar el método principal para mantener una sola configuración.
+            return self::connection();
+        } catch (Throwable) {
+            // Comentario: Devolver nulo para que el endpoint responda en modo simulado controlado.
+            return null;
+        }
     }
 }

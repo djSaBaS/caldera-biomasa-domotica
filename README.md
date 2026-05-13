@@ -6,11 +6,11 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.2.0-sprint-01-base`  
-**Fecha:** 2026-05-12  
-**Estado:** base funcional inicial en modo seguro/simulado.
+**Versión:** `0.3.0-sprint-02-persistencia-auth`  
+**Fecha:** 2026-05-13  
+**Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional y modo seguro/simulado.
 
-Esta versión prepara el desarrollo real, pero **no debe conectarse todavía a cargas reales de 230V**.
+Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
 ## Principios innegociables
 
@@ -41,13 +41,13 @@ docs/                      Documentación técnica, seguridad, Codex y lógica o
 firmware/arduino-mega/      Control crítico simulado de sensores, estados y salidas.
 firmware/esp32/             Conectividad WiFi/HTTP simulada y puente serie.
 server/api/                 Endpoints PHP consumidos por dispositivo y panel.
-server/app/                 Núcleo PHP común, configuración y servicios.
+server/app/                 Núcleo PHP común, configuración, repositorios y servicios.
 server/public/              Entrada pública mínima del backend.
-server/sql/                 Esquema SQL inicial.
+server/sql/                 Esquema SQL inicial y seed de desarrollo de ejemplo.
 server/storage/             Logs y almacenamiento futuro.
 web/                        Panel Bootstrap mobile-first.
-tools/                      Scripts auxiliares futuros.
-tests/                      Pruebas futuras y criterios mínimos.
+tools/                      Scripts auxiliares.
+tests/                      Pruebas de humo y pruebas futuras.
 ```
 
 ## Backend PHP
@@ -66,6 +66,10 @@ La API usa respuestas JSON consistentes:
 Endpoints iniciales:
 
 - `GET /api/index.php`
+- `POST /api/auth_login.php`
+- `GET /api/auth_me.php`
+- `POST /api/auth_logout.php`
+- `POST /api/password_reset_request.php`
 - `POST /api/telemetry.php`
 - `GET /api/config.php?device_id=caldera-01`
 - `GET /api/command.php?device_id=caldera-01`
@@ -80,7 +84,36 @@ Los endpoints de dispositivo requieren cabecera:
 X-API-KEY: cambiar_en_local
 ```
 
-La clave anterior es un placeholder. En desarrollo real debe configurarse fuera de Git.
+La clave anterior es un placeholder. En desarrollo real debe configurarse en `server/.env` fuera de Git o validarse contra `devices.api_key_hash`.
+
+## Configuración local
+
+Copia el ejemplo de entorno y ajusta valores locales sin subir secretos:
+
+```bash
+cp server/.env.example server/.env
+```
+
+El archivo `server/.env` queda ignorado por Git.
+
+## Autenticación Sprint 02
+
+El login real usa:
+
+- tabla `users`,
+- tabla `roles`,
+- `password_hash()` para crear hashes,
+- `password_verify()` para validar contraseñas,
+- sesiones PHP con cookie HTTP-only,
+- restablecimiento preparado mediante token hasheado.
+
+Para crear un hash local:
+
+```bash
+php tools/scripts/generar_hash_password.php 'una-contraseña-larga-local'
+```
+
+Después se puede usar `server/sql/seed_development.example.sql` como plantilla, sustituyendo los placeholders por hashes generados localmente.
 
 ## Base de datos
 
@@ -90,18 +123,13 @@ El esquema inicial está en:
 server/sql/schema.sql
 ```
 
-Incluye tablas para:
+El seed local de ejemplo está en:
 
-- usuarios y roles,
-- dispositivos,
-- telemetría,
-- configuración e histórico,
-- comandos e histórico,
-- eventos y alarmas,
-- compras y consumo de combustible,
-- mantenimiento,
-- notificaciones,
-- ajustes del sistema.
+```text
+server/sql/seed_development.example.sql
+```
+
+Incluye tablas para usuarios, roles, dispositivos, telemetría, configuración, comandos, eventos, alarmas, combustible, mantenimiento, notificaciones y ajustes del sistema.
 
 ## Frontend
 
@@ -111,14 +139,15 @@ El panel está en:
 web/index.html
 ```
 
-Incluye:
+Incluye login visual conectado al backend, dashboard con KPIs simulados, menú offcanvas móvil, sidebar escritorio, gráficas Chart.js y secciones iniciales.
 
-- login visual preparado para autenticación real,
-- dashboard con KPIs simulados,
-- menú offcanvas en móvil,
-- sidebar en escritorio,
-- gráficas Chart.js,
-- secciones iniciales de estado, usuarios, programación, configuración, logs, combustible, mantenimiento, notificaciones y ajustes.
+Por defecto, el JavaScript llama a:
+
+```text
+http://localhost:8081/api
+```
+
+En despliegue real se debe configurar `window.APP_API_BASE_URL` antes de cargar `web/assets/js/app.js`.
 
 ## Firmware
 
@@ -130,15 +159,7 @@ Archivo principal:
 firmware/arduino-mega/src/main.ino
 ```
 
-Incluye:
-
-- `SIMULATION_MODE = true`,
-- máquina de estados original base,
-- sensores simulados,
-- salidas simuladas,
-- seguridad local básica,
-- ciclo del sinfín con ON = OFF,
-- telemetría JSON por serie.
+Incluye `SIMULATION_MODE = true`, máquina de estados base, sensores simulados, salidas simuladas, seguridad local básica, ciclo del sinfín ON = OFF y telemetría JSON por serie.
 
 ### ESP32
 
@@ -148,20 +169,14 @@ Archivo principal:
 firmware/esp32/src/main.ino
 ```
 
-Incluye:
-
-- `SIMULATION_MODE = true`,
-- placeholders WiFi,
-- envío HTTP simulado,
-- consulta simulada de configuración y comandos,
-- puente serie preparado.
+Incluye `SIMULATION_MODE = true`, placeholders WiFi, envío HTTP simulado, consulta simulada de configuración y comandos, y puente serie preparado.
 
 ## Cómo probar en desarrollo
 
-### Servir panel web
+### Validar sintaxis PHP
 
 ```bash
-php -S localhost:8080 -t web
+find server -name '*.php' -print0 | xargs -0 -n1 php -l
 ```
 
 ### Servir backend
@@ -170,32 +185,17 @@ php -S localhost:8080 -t web
 php -S localhost:8081 -t server
 ```
 
-### Probar API base
+### Ejecutar prueba de humo
 
 ```bash
-curl http://localhost:8081/api/index.php
+tests/backend/smoke_api.sh
 ```
 
-### Probar telemetría simulada
+### Servir panel web
 
 ```bash
-curl -X POST http://localhost:8081/api/telemetry.php \
-  -H "Content-Type: application/json" \
-  -H "X-API-KEY: cambiar_en_local" \
-  -d '{"device_id":"caldera-01","state":"NORMAL"}'
+php -S localhost:8080 -t web
 ```
-
-## Documentos importantes
-
-- `docs/codex/PROMPT_CODEX_MASTER.md`
-- `docs/codex/SPRINT_01.md`
-- `docs/arquitectura/LOGICA_ORIGINAL_CALDERA.md`
-- `docs/arquitectura/ARQUITECTURA_GENERAL.md`
-- `docs/seguridad/REGLAS_SEGURIDAD.md`
-- `docs/arquitectura/API_CONTRACT.md`
-- `docs/arquitectura/HARDWARE.md`
-- `docs/DECISIONS.md`
-- `version.md`
 
 ## Advertencia de seguridad
 

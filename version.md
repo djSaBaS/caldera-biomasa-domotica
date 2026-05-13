@@ -2,36 +2,39 @@
 
 ## Versión actual
 
-**0.2.0-sprint-01-base**
+**0.3.0-sprint-02-persistencia-auth**
 
 ## Fecha
 
-2026-05-12
+2026-05-13
 
 ## Estado
 
-Base funcional inicial preparada para desarrollo real en modo seguro/simulado.
+Base de desarrollo con autenticación PHP real preparada, persistencia MySQL opcional y modo degradado seguro.
 
 ## Incluye
 
-- Documentación Sprint 01.
-- README principal actualizado.
-- Contrato API ampliado.
-- Esquema SQL inicial MySQL con tablas principales.
-- Núcleo PHP mínimo sin framework pesado.
-- Endpoints API base para telemetría, configuración, comandos, ACK, eventos, combustible y mantenimiento.
-- `.env.example` sin credenciales reales.
-- Panel Bootstrap 5 mobile-first con datos simulados.
-- Menú offcanvas móvil y sidebar escritorio.
-- KPIs y gráficas Chart.js simuladas.
-- Firmware Arduino Mega en modo simulación segura.
-- Firmware ESP32 en modo simulación segura.
+- Documento Sprint 02.
+- Autenticación con sesiones PHP contra tabla `users`.
+- Solicitud de restablecimiento de contraseña con token hasheado.
+- Validación de API key por variable de entorno o `devices.api_key_hash`.
+- Persistencia MySQL para telemetría, eventos, combustible y mantenimiento cuando existe base importada.
+- Lectura de configuración y comandos desde MySQL con fallback seguro.
+- Repositorios PHP para separar acceso a datos.
+- Validaciones centralizadas de entrada.
+- Carga local de `server/.env` sin dependencias externas.
+- `.gitignore` para evitar subir secretos locales.
+- Panel web conectado a endpoints reales de login y restablecimiento.
+- Script CLI para generar hashes de contraseña.
+- Prueba de humo backend reproducible.
 
 ## Pendiente
 
-- Integrar persistencia real PDO en endpoints.
-- Implementar autenticación completa con sesiones y recuperación de contraseña.
-- Añadir pruebas automatizadas.
+- Crear autorización fina por rol en cada endpoint.
+- Añadir CSRF para formularios web autenticados.
+- Implementar alta/edición real de usuarios desde panel.
+- Crear migraciones versionadas en lugar de un único `schema.sql`.
+- Añadir tests unitarios e integración con base de datos efímera.
 - Validar sensores reales en banco.
 - Revisar la lógica original contra manuales antes de activar hardware.
 - Definir inventario final de sensores.

@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## [0.3.0-sprint-02-persistencia-auth] - 2026-05-13
+
+### Añadido
+
+- Documento `docs/codex/SPRINT_02.md` con alcance y criterios del sprint.
+- Endpoints de autenticación `auth_login.php`, `auth_me.php`, `auth_logout.php` y `password_reset_request.php`.
+- Servicio `AuthService` con sesiones PHP, `password_verify` y token de restablecimiento hasheado.
+- Helper `Validation` para centralizar validaciones de entrada.
+- Repositorios PHP para dispositivos, telemetría, configuración, comandos, eventos, combustible y mantenimiento.
+- Persistencia MySQL opcional en endpoints clave cuando la base está disponible.
+- Validación de API key contra variable de entorno o hash en tabla `devices`.
+- Carga local de `server/.env` y `.gitignore` para secretos locales.
+- Script `tools/scripts/generar_hash_password.php` para crear hashes de usuarios locales.
+- Script `tests/backend/smoke_api.sh` para pruebas de humo del backend.
+- Archivo `server/sql/seed_development.example.sql` para datos locales sin secretos reales.
+
+### Cambiado
+
+- Actualizado el panel para llamar al login y restablecimiento de contraseña reales del backend.
+- Actualizado `README.md`, `version.md` y contrato API con instrucciones Sprint 02.
+- Actualizado `/api/index.php` para informar disponibilidad de MySQL y endpoints nuevos.
+
+### Seguridad
+
+- El encendido remoto sigue sin habilitarse automáticamente.
+- La API puede funcionar en modo degradado sin MySQL, pero informa que no persiste.
+- El restablecimiento de contraseña no revela si el email existe.
+- Las salidas físicas siguen en modo seguro/simulado.
+
 ## [0.2.0-sprint-01-base] - 2026-05-12
 
 ### Añadido

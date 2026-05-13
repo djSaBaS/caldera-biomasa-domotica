@@ -5,7 +5,7 @@
 #include <HTTPClient.h>
 
 // Comentario: Definir versión del firmware ESP32 para trazabilidad.
-const char* FIRMWARE_VERSION = "0.2.0-sprint-01-base";
+const char* FIRMWARE_VERSION = "0.3.0-sprint-02-persistencia-auth";
 
 // Comentario: Mantener modo simulación activado durante Sprint 01.
 const bool SIMULATION_MODE = true;

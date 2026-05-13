@@ -16,24 +16,45 @@ ApiKeyValidator::requireValidDeviceKey();
 $payload = Request::jsonBody();
 
 // Comentario: Validar severidad contra catálogo permitido.
-$severity = trim((string) ($payload['severity'] ?? 'info'));
+$severity = Validation::allowedString($payload, 'severity', ['info', 'aviso', 'error', 'critico'], 'La severidad indicada no está permitida.');
 
-// Comentario: Definir severidades admitidas.
-$allowedSeverities = ['info', 'aviso', 'error', 'critico'];
+// Comentario: Validar tipo de evento contra catálogo permitido.
+$eventType = Validation::allowedString($payload, 'event_type', ['estado', 'configuracion', 'orden', 'comunicacion', 'sensor', 'mantenimiento', 'sistema'], 'El tipo de evento no está permitido.');
 
-// Comentario: Rechazar severidades desconocidas.
-if (!in_array($severity, $allowedSeverities, true)) {
-    JsonResponse::error('severidad_invalida', 'La severidad indicada no está permitida.', 422);
+// Comentario: Obtener identificador opcional de dispositivo.
+$deviceUid = Validation::optionalString($payload, 'device_id', 80);
+
+// Comentario: Añadir tipo validado al payload normalizado.
+$payload['event_type'] = $eventType;
+
+// Comentario: Añadir severidad validada al payload normalizado.
+$payload['severity'] = $severity;
+
+// Comentario: Intentar persistir evento en MySQL.
+$connection = Database::tryConnection();
+
+// Comentario: Preparar metadatos de persistencia.
+$meta = ['persistence' => 'skipped'];
+
+// Comentario: Guardar evento si hay base disponible.
+if ($connection instanceof PDO) {
+    // Comentario: Resolver dispositivo interno si se informó UID.
+    $deviceId = $deviceUid !== null ? DeviceRepository::findIdByUid($connection, $deviceUid) : null;
+
+    // Comentario: Insertar evento validado.
+    $eventId = EventRepository::store($connection, $deviceId, $payload);
+
+    // Comentario: Informar evento persistido.
+    $meta = ['persistence' => 'stored', 'event_id' => $eventId];
 }
 
-// Comentario: Responder recepción del evento para persistencia futura.
+// Comentario: Responder recepción del evento.
 JsonResponse::success(
     [
-        'message' => 'Evento validado y preparado para persistencia.',
+        'message' => 'Evento validado.',
         'severity' => $severity,
+        'event_type' => $eventType,
     ],
-    [
-        'simulation' => true,
-    ],
+    $meta,
     202
 );

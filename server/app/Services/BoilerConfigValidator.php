@@ -31,4 +31,27 @@ final class BoilerConfigValidator
             'notifications_enabled' => ['label' => 'Notificaciones', 'unit' => '', 'min' => null, 'max' => null, 'allowed' => [0, 1], 'description' => 'Activa o desactiva avisos del sistema.'],
         ];
     }
+
+    // Comentario: Obtener configuración segura de respaldo cuando MySQL no está disponible.
+    public static function defaultConfig(string $deviceUid): array
+    {
+        // Comentario: Devolver parámetros conservadores con sinfín ON igual a OFF.
+        return [
+            'config_version' => 1,
+            'device_id' => $deviceUid,
+            'mode' => 'manual',
+            'auger_cycle_seconds' => 10,
+            'fan_primary_pct' => 50,
+            'fan_secondary_pct' => 50,
+            'pump_on_temp' => 60,
+            'target_temp' => 75,
+            'maintenance_temp' => 80,
+            'safety_temp' => 90,
+            'startup_timeout_seconds' => 900,
+            'post_ventilation_seconds' => 180,
+            'telemetry_interval_seconds' => 10,
+            'config_poll_interval_seconds' => 30,
+            'notifications_enabled' => 1,
+        ];
+    }
 }

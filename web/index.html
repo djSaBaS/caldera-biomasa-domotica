@@ -66,22 +66,23 @@
             <div class="card-body">
               <h1 class="h4" id="loginTitulo">Acceso al panel</h1>
               <p class="text-secondary-emphasis">Formulario preparado para autenticación PHP real con sesiones y contraseñas hasheadas.</p>
-              <form class="row g-3" novalidate>
+              <form class="row g-3" id="formLogin" novalidate>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="usuario">Usuario</label>
-                  <input class="form-control form-control-lg" id="usuario" name="usuario" autocomplete="username" placeholder="usuario">
+                  <input class="form-control form-control-lg" id="usuario" name="usuario" autocomplete="username" placeholder="usuario" required>
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="contrasena">Contraseña</label>
-                  <input class="form-control form-control-lg" id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••">
+                  <input class="form-control form-control-lg" id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••" required>
                 </div>
                 <div class="col-12 col-md-4 d-grid align-items-end">
-                  <button class="btn btn-warning btn-lg" type="button">Entrar en modo demo</button>
+                  <button class="btn btn-warning btn-lg" type="submit">Entrar</button>
                 </div>
                 <div class="col-12">
-                  <a href="#" class="link-warning">Restablecer contraseña</a>
+                  <button class="btn btn-link link-warning p-0" id="btnRestablecer" type="button">Restablecer contraseña</button>
                 </div>
               </form>
+              <div class="alert alert-secondary mt-3 mb-0 d-none" id="loginResultado" role="status"></div>
             </div>
           </div>
         </section>

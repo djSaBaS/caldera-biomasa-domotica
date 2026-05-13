@@ -1,0 +1,17 @@
+# Comentario: Evitar credenciales locales del backend.
+server/.env
+
+# Comentario: Evitar dependencias PHP si se añaden herramientas futuras.
+vendor/
+
+# Comentario: Evitar dependencias JavaScript si se añaden herramientas futuras.
+node_modules/
+
+# Comentario: Evitar artefactos temporales de sistema operativo.
+.DS_Store
+
+# Comentario: Evitar logs generados en desarrollo.
+server/storage/logs/*.log
+
+# Comentario: Mantener archivos informativos dentro de logs.
+!server/storage/logs/info.md
