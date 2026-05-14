@@ -2,17 +2,20 @@
 
 ## Versión actual
 
-**0.4.2-demo-ci-tests**
+**0.4.3-firmware-offline-config**
 
 ## Fecha
 
-2026-05-13
+2026-05-14
 
 ## Estado
 
-Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, seed demo de previsualización, tests iniciales, CI, persistencia MySQL opcional, modo degradado seguro y firmware simulado.
+Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, seed demo, tests, CI, firmware con puente ESP32 y cache offline EEPROM, persistencia MySQL opcional, modo degradado seguro y simulación activa.
 
 ## Incluye
+
+- Firmware Arduino/ESP32 con protocolo `TEL`/`CFG`/`ACK`, envío de telemetría al backend y cache EEPROM de configuración válida.
+- Validación estática del contrato firmware integrada en checks locales y CI.
 
 - Seed demo SQL para previsualización con datos ficticios de telemetría, eventos, combustible y mantenimiento.
 - Puerta de calidad local y workflow CI para lint, pruebas unitarias, validación de seed y smoke API.

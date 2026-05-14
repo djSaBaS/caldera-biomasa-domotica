@@ -29,5 +29,8 @@ php tests/backend/run_unit_tests.php
 # Comentario: Comprobar que el seed demo contiene las entidades mínimas para previsualización.
 php tests/backend/validate_demo_seed.php
 
+# Comentario: Comprobar contrato mínimo de comunicación y cache offline del firmware.
+php tests/firmware/validate_firmware_contract.php
+
 # Comentario: Comprobar espacios finales y problemas básicos del diff de Git.
 git diff --check

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.4.3-firmware-offline-config] - 2026-05-14
+
+### Añadido
+
+- Firmware Arduino Mega con cache EEPROM de la última configuración válida para operación autónoma sin internet.
+- Protocolo serie `TEL`/`CFG`/`ACK` entre Arduino Mega y ESP32 para telemetría, configuración remota y confirmaciones.
+- Firmware ESP32 con puente HTTP para enviar telemetría, consultar configuración y reenviar ACK al backend.
+- Validación estática `tests/firmware/validate_firmware_contract.php` integrada en la puerta de calidad.
+
+### Seguridad
+
+- Arduino valida rangos localmente antes de aplicar y persistir parámetros recibidos desde MySQL.
+- La configuración remota no sustituye a las reglas críticas locales ni elimina el modo simulación por defecto.
+
 ## [0.4.2-demo-ci-tests] - 2026-05-13
 
 ### Añadido

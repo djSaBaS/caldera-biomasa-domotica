@@ -6,9 +6,9 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.4.2-demo-ci-tests`
-**Fecha:** 2026-05-13
-**Estado:** base de desarrollo con autenticación PHP, persistencia MySQL opcional, datos demo, tests iniciales y CI.
+**Versión:** `0.4.3-firmware-offline-config`
+**Fecha:** 2026-05-14
+**Estado:** base de desarrollo con backend PHP, persistencia MySQL opcional, datos demo, tests, CI y firmware con cache offline de configuración.
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
@@ -203,7 +203,7 @@ Archivo principal:
 firmware/arduino-mega/src/main.ino
 ```
 
-Incluye `SIMULATION_MODE = true`, máquina de estados base, sensores simulados, salidas simuladas, seguridad local básica, ciclo del sinfín ON = OFF y telemetría JSON por serie.
+Incluye `SIMULATION_MODE = true`, máquina de estados base, sensores simulados, salidas simuladas, seguridad local básica, ciclo del sinfín ON = OFF, telemetría `TEL:{json}` hacia ESP32 y cache EEPROM de la última configuración válida para trabajar sin internet.
 
 ### ESP32
 
@@ -213,7 +213,22 @@ Archivo principal:
 firmware/esp32/src/main.ino
 ```
 
-Incluye `SIMULATION_MODE = true`, placeholders WiFi, envío HTTP simulado, consulta simulada de configuración y comandos, y puente serie preparado.
+Incluye `SIMULATION_MODE = true`, placeholders WiFi, envío HTTP de telemetría cuando se habilite red, consulta de configuración, envío `CFG:` hacia Arduino, recepción `ACK:` y reenvío de confirmaciones al backend.
+
+### Configuración offline de caldera
+
+La configuración remota vive en MySQL, pero Arduino Mega guarda en EEPROM la última configuración válida que recibe desde ESP32. Si se pierde internet, Arduino sigue usando esos parámetros locales y no depende del backend para reglas críticas como bomba, temperatura objetivo, seguridad o ciclo del sinfín.
+
+Flujo actual:
+
+1. Arduino envía `TEL:{json}` por `Serial1`.
+2. ESP32 envía el JSON a `POST /api/telemetry.php`.
+3. ESP32 consulta `GET /api/config.php?device_id=caldera-01`.
+4. ESP32 transforma la respuesta en una trama `CFG:` compacta.
+5. Arduino valida rangos, aplica, guarda en EEPROM y responde `ACK:{json}`.
+6. ESP32 reenvía el ACK a `POST /api/config_ack.php`.
+
+Sinceramente: todavía no usaría esto en producción real. Falta probarlo con hardware, cortes de alimentación, respuestas HTTP corruptas y watchdog. La decisión correcta ahora es mantener `SIMULATION_MODE=true` hasta pasar banco de pruebas.
 
 ## Cómo probar en desarrollo
 
