@@ -230,6 +230,14 @@ Flujo actual:
 
 Sinceramente: todavía no usaría esto en producción real. Falta probarlo con hardware, cortes de alimentación, respuestas HTTP corruptas y watchdog. La decisión correcta ahora es mantener `SIMULATION_MODE=true` hasta pasar banco de pruebas.
 
+Los diagramas de conexión mantenidos están en:
+
+```text
+docs/arquitectura/CONEXIONES.md
+```
+
+Actualmente solo está documentado como cableado real el UART Arduino Mega↔ESP32. Los accesorios de caldera aparecen como pinout pendiente para evitar inventar conexiones no validadas.
+
 ## Cómo probar en desarrollo
 
 ### Ejecutar puerta de calidad local

@@ -23,6 +23,9 @@ bash -n tests/backend/smoke_api.sh
 # Comentario: Validar sintaxis del runner de calidad.
 bash -n tests/backend/run_quality_checks.sh
 
+# Comentario: Validar sintaxis del script de compilación firmware.
+bash -n tests/firmware/compile_firmware.sh
+
 # Comentario: Ejecutar pruebas unitarias PHP iniciales del núcleo backend.
 php tests/backend/run_unit_tests.php
 
@@ -31,6 +34,9 @@ php tests/backend/validate_demo_seed.php
 
 # Comentario: Comprobar contrato mínimo de comunicación y cache offline del firmware.
 php tests/firmware/validate_firmware_contract.php
+
+# Comentario: Comprobar que los diagramas no inventan cableados no documentados.
+php tests/firmware/validate_connection_diagrams.php
 
 # Comentario: Comprobar espacios finales y problemas básicos del diff de Git.
 git diff --check

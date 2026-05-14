@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [0.4.4-ci-arduino-cli-diagramas] - 2026-05-14
+
+### Añadido
+
+- Instalación de Arduino CLI en GitHub Actions mediante `arduino/setup-arduino-cli@v2`.
+- Script `tests/firmware/compile_firmware.sh` para compilar Arduino Mega 2560 y ESP32 desde CI.
+- Validación estática de diagramas de conexión en `tests/firmware/validate_connection_diagrams.php`.
+- Diagramas SVG para UART Arduino Mega↔ESP32, flujo firmware-backend y accesorios con pinout pendiente.
+- Documento `docs/arquitectura/CONEXIONES.md` con conexiones reales documentadas y advertencias de seguridad.
+
+### Seguridad
+
+- Los diagramas no asignan pines a cargas de caldera sin respaldo del firmware o esquema eléctrico validado.
+- Los accesorios de 230V quedan explícitamente marcados como no cableables hasta definir pinout, aislamiento y pruebas de banco.
+
 ## [0.4.3-firmware-offline-config] - 2026-05-14
 
 ### Añadido

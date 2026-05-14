@@ -22,7 +22,7 @@ jobs:
     # Comentario: Usar Ubuntu mantenido por GitHub para herramientas estándar.
     runs-on: ubuntu-latest
     # Comentario: Fijar timeout razonable para evitar ejecuciones colgadas.
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       # Comentario: Descargar el código del repositorio en el runner.
       - name: Checkout
@@ -41,9 +41,28 @@ jobs:
         with:
           node-version: '20'
 
+      # Comentario: Instalar Arduino CLI oficial para compilar firmware en CI.
+      - name: Preparar Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: "1.x"
+
+      # Comentario: Reutilizar cores Arduino descargados para reducir tiempo de CI.
+      - name: Cache Arduino CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.arduino15
+          key: arduino-cli-${{ runner.os }}-${{ hashFiles('tests/firmware/compile_firmware.sh') }}
+          restore-keys: |
+            arduino-cli-${{ runner.os }}-
+
       # Comentario: Ejecutar lint, pruebas unitarias y validaciones estáticas del repositorio.
       - name: Ejecutar puerta de calidad
         run: tests/backend/run_quality_checks.sh
+
+      # Comentario: Compilar firmware Arduino Mega y ESP32 con Arduino CLI.
+      - name: Compilar firmware Arduino
+        run: tests/firmware/compile_firmware.sh
 
       # Comentario: Levantar backend PHP embebido para pruebas de humo HTTP sin MySQL obligatorio.
       - name: Arrancar API local

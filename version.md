@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-**0.4.3-firmware-offline-config**
+**0.4.4-ci-arduino-cli-diagramas**
 
 ## Fecha
 
@@ -10,9 +10,12 @@
 
 ## Estado
 
-Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, seed demo, tests, CI, firmware con puente ESP32 y cache offline EEPROM, persistencia MySQL opcional, modo degradado seguro y simulación activa.
+Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, seed demo, tests, CI con Arduino CLI, firmware con puente ESP32 y cache offline EEPROM, diagramas de conexión documentados, persistencia MySQL opcional, modo degradado seguro y simulación activa.
 
 ## Incluye
+
+- CI con Arduino CLI para compilar firmware Arduino Mega 2560 y ESP32.
+- Diagramas SVG de conexión UART real y advertencia de accesorios con pinout pendiente.
 
 - Firmware Arduino/ESP32 con protocolo `TEL`/`CFG`/`ACK`, envío de telemetría al backend y cache EEPROM de configuración válida.
 - Validación estática del contrato firmware integrada en checks locales y CI.

@@ -79,3 +79,7 @@ ACK:{json}
 ## Advertencia realista
 
 El parsing JSON del ESP32 está implementado sin ArduinoJson para no añadir dependencias todavía. Esto sirve para banco de pruebas y contrato inicial, pero para producción conviene evaluar ArduinoJson con límites de memoria definidos, pruebas de respuestas corruptas y watchdog de comunicaciones.
+
+## Diagramas de conexión
+
+Los diagramas mantenidos están en `docs/arquitectura/CONEXIONES.md`. Solo se documenta como cableado real el enlace UART Mega↔ESP32; los accesorios de caldera siguen marcados como pinout pendiente para no inventar conexiones.

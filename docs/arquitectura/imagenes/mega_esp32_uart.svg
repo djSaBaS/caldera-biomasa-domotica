@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" role="img" aria-labelledby="title desc">
+  <title id="title">Conexión UART real documentada entre Arduino Mega 2560 y ESP32</title>
+  <desc id="desc">Diagrama de cableado del enlace serie usado por el firmware: Serial1 del Mega con Serial2 del ESP32, masa común y adaptación de nivel para TX de 5V hacia RX de 3,3V.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#0f766e" />
+    </marker>
+    <style>
+      .board { fill: #f8fafc; stroke: #0f172a; stroke-width: 3; rx: 18; }
+      .title { font-family: Arial, sans-serif; font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 17px; fill: #334155; }
+      .label { font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .small { font-family: Arial, sans-serif; font-size: 15px; fill: #334155; }
+      .pin { fill: #e2e8f0; stroke: #475569; stroke-width: 2; }
+      .wire { fill: none; stroke: #0f766e; stroke-width: 5; marker-end: url(#arrow); }
+      .wire2 { fill: none; stroke: #2563eb; stroke-width: 5; marker-end: url(#arrow); }
+      .gnd { fill: none; stroke: #111827; stroke-width: 5; }
+      .warn { fill: #fff7ed; stroke: #f97316; stroke-width: 2; }
+      .warnText { font-family: Arial, sans-serif; font-size: 15px; fill: #9a3412; }
+    </style>
+  </defs>
+  <rect width="1100" height="640" fill="#ffffff" />
+  <text x="55" y="54" class="title">UART Arduino Mega 2560 ↔ ESP32</text>
+  <text x="55" y="84" class="subtitle">Conexión basada en el firmware actual: Mega Serial1 y ESP32 Serial2.</text>
+  <rect x="70" y="140" width="360" height="330" class="board" />
+  <text x="105" y="185" class="label">Arduino Mega 2560</text>
+  <text x="105" y="212" class="small">Firmware: firmware/arduino-mega/src/main.ino</text>
+  <rect x="105" y="250" width="185" height="42" class="pin" />
+  <text x="122" y="277" class="small">TX1 / Pin 18</text>
+  <rect x="105" y="320" width="185" height="42" class="pin" />
+  <text x="122" y="347" class="small">RX1 / Pin 19</text>
+  <rect x="105" y="390" width="185" height="42" class="pin" />
+  <text x="122" y="417" class="small">GND</text>
+  <rect x="670" y="140" width="360" height="330" class="board" />
+  <text x="705" y="185" class="label">ESP32</text>
+  <text x="705" y="212" class="small">Firmware: firmware/esp32/src/main.ino</text>
+  <rect x="810" y="250" width="185" height="42" class="pin" />
+  <text x="827" y="277" class="small">RX2 / GPIO16</text>
+  <rect x="810" y="320" width="185" height="42" class="pin" />
+  <text x="827" y="347" class="small">TX2 / GPIO17</text>
+  <rect x="810" y="390" width="185" height="42" class="pin" />
+  <text x="827" y="417" class="small">GND</text>
+  <path d="M290 271 C440 250 520 250 810 271" class="wire" />
+  <text x="445" y="238" class="small">Mega TX1 5V → adaptar nivel → ESP32 RX2 3,3V</text>
+  <path d="M810 341 C650 365 500 365 290 341" class="wire2" />
+  <text x="430" y="395" class="small">ESP32 TX2 3,3V → Mega RX1</text>
+  <path d="M290 411 C450 455 650 455 810 411" class="gnd" />
+  <text x="475" y="485" class="small">Masa común obligatoria</text>
+  <rect x="70" y="520" width="960" height="78" class="warn" />
+  <text x="95" y="548" class="warnText">Nota de seguridad: no alimentar el ESP32 desde el pin 3,3V del Mega. Usar fuente estable adecuada y unir GND.</text>
+  <text x="95" y="575" class="warnText">El TX1 del Mega trabaja a 5V; hacia RX2 del ESP32 debe usarse divisor resistivo o conversor de nivel lógico.</text>
+</svg>

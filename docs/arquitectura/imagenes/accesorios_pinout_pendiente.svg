@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" role="img" aria-labelledby="title desc">
+  <title id="title">Accesorios de caldera pendientes de pinout real</title>
+  <desc id="desc">Diagrama de estado que indica que bombas, sinfín, ventiladores, sensores y relés aún no tienen pines reales asignados en este repositorio y no deben cablearse desde la documentación actual.</desc>
+  <style>
+    .board { fill: #f8fafc; stroke: #0f172a; stroke-width: 3; rx: 16; }
+    .pending { fill: #fff7ed; stroke: #f97316; stroke-width: 3; rx: 16; }
+    .danger { fill: #fef2f2; stroke: #dc2626; stroke-width: 3; rx: 16; }
+    .title { font-family: Arial, sans-serif; font-size: 26px; font-weight: 700; fill: #0f172a; }
+    .label { font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #0f172a; }
+    .small { font-family: Arial, sans-serif; font-size: 15px; fill: #334155; }
+    .warn { font-family: Arial, sans-serif; font-size: 16px; font-weight: 700; fill: #991b1b; }
+    .line { fill: none; stroke: #f97316; stroke-width: 3; stroke-dasharray: 8 8; }
+  </style>
+  <rect width="1100" height="620" fill="#ffffff" />
+  <text x="55" y="55" class="title">Accesorios: pinout real pendiente</text>
+  <text x="55" y="88" class="small">Este repositorio aún no asigna pines reales a cargas de caldera. No se documenta ningún cableado de 230V.</text>
+  <rect x="70" y="150" width="300" height="300" class="board" />
+  <text x="112" y="195" class="label">Arduino Mega</text>
+  <text x="112" y="225" class="small">Lógica simulada actual</text>
+  <text x="112" y="255" class="small">Sin pines físicos definidos</text>
+  <rect x="505" y="125" width="250" height="70" class="pending" />
+  <text x="535" y="168" class="label">Bomba agua</text>
+  <rect x="505" y="215" width="250" height="70" class="pending" />
+  <text x="535" y="258" class="label">Motor sinfín</text>
+  <rect x="505" y="305" width="250" height="70" class="pending" />
+  <text x="535" y="348" class="label">Ventiladores</text>
+  <rect x="505" y="395" width="250" height="70" class="pending" />
+  <text x="535" y="438" class="label">Sensores críticos</text>
+  <path d="M370 205 C430 170 450 160 505 160" class="line" />
+  <path d="M370 255 C430 245 450 250 505 250" class="line" />
+  <path d="M370 305 C430 335 450 340 505 340" class="line" />
+  <path d="M370 355 C430 425 450 430 505 430" class="line" />
+  <rect x="815" y="170" width="220" height="260" class="danger" />
+  <text x="845" y="220" class="warn">NO CABLEAR AÚN</text>
+  <text x="845" y="260" class="small">Faltan pines reales.</text>
+  <text x="845" y="292" class="small">Faltan relés/dimmers</text>
+  <text x="845" y="324" class="small">validados en banco.</text>
+  <text x="845" y="356" class="small">Falta esquema eléctrico</text>
+  <text x="845" y="388" class="small">con protecciones.</text>
+  <text x="70" y="535" class="small">Uso correcto de esta imagen: recordar que los accesorios existen en la arquitectura, pero su cableado real debe añadirse solo tras definir pines, módulos, alimentación, aislamiento y pruebas con carga segura.</text>
+</svg>
