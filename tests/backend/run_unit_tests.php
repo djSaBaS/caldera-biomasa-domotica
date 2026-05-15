@@ -15,6 +15,8 @@ require_once __DIR__ . '/../../server/app/Core/Database.php';
 require_once __DIR__ . '/../../server/app/Core/ApiKeyValidator.php';
 // Comentario: Cargar catálogo de configuración de caldera para validar límites funcionales.
 require_once __DIR__ . '/../../server/app/Services/BoilerConfigValidator.php';
+// Comentario: Cargar repositorio de dashboard para validar fallback estable.
+require_once __DIR__ . '/../../server/app/Services/DashboardRepository.php';
 
 // Comentario: Definir contador global de pruebas ejecutadas para resumen final.
 $testsRun = 0;
@@ -77,6 +79,18 @@ assert_same('caldera-test-01', $defaultConfig['device_id'], 'La configuración p
 
 // Comentario: Comprobar que la temperatura de seguridad no queda por debajo del objetivo.
 assert_true($defaultConfig['safety_temp'] >= $defaultConfig['target_temp'], 'La temperatura de seguridad por defecto es coherente.');
+
+// Comentario: Validar snapshot fallback del dashboard sin conexión MySQL.
+$dashboardFallback = DashboardRepository::fallbackSnapshot('caldera-test-01');
+
+// Comentario: Comprobar que el dashboard conserva el identificador solicitado.
+assert_same('caldera-test-01', $dashboardFallback['device_id'], 'El dashboard fallback conserva el device_id.');
+
+// Comentario: Comprobar que el dashboard expone KPIs suficientes para el panel.
+assert_true(count($dashboardFallback['kpis']) >= 8, 'El dashboard fallback expone KPIs mínimos.');
+
+// Comentario: Comprobar que el dashboard incluye sección de estado.
+assert_true(isset($dashboardFallback['sections']['estado']['items']), 'El dashboard fallback incluye sección estado.');
 
 // Comentario: Preparar reflexión para probar la política privada de clave de entorno sin abrir HTTP real.
 $environmentKeyPolicy = new ReflectionMethod(ApiKeyValidator::class, 'isValidEnvironmentKey');

@@ -2,17 +2,19 @@
 
 ## Versión actual
 
-**0.4.4-ci-arduino-cli-diagramas**
+**0.4.5-dashboard-api-frontend**
 
 ## Fecha
 
-2026-05-14
+2026-05-15
 
 ## Estado
 
-Base de desarrollo con autenticación PHP, administración web segura inicial, rate limiting básico, seed demo, tests, CI con Arduino CLI, firmware con puente ESP32 y cache offline EEPROM, diagramas de conexión documentados, persistencia MySQL opcional, modo degradado seguro y simulación activa.
+Base de desarrollo con autenticación PHP, administración web segura inicial, dashboard API, frontend sincronizado, rate limiting básico, seed demo, tests, CI con Arduino CLI, firmware con puente ESP32 y cache offline EEPROM, diagramas de conexión documentados, persistencia MySQL opcional, modo degradado seguro y simulación activa.
 
 ## Incluye
+
+- Dashboard API con KPIs agregados, fallback seguro y frontend sincronizado.
 
 - CI con Arduino CLI para compilar firmware Arduino Mega 2560 y ESP32.
 - Diagramas SVG de conexión UART real y advertencia de accesorios con pinout pendiente.

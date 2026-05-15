@@ -6,8 +6,35 @@
   // Comentario: Mantener token CSRF entregado por backend tras login real.
   let csrfToken = '';
 
-  // Comentario: Definir KPIs simulados visibles en el dashboard.
-  const kpis = [
+  // Comentario: Escapar texto antes de insertarlo como HTML controlado.
+  const escapeHtml = (value) => {
+    // Comentario: Convertir cualquier valor recibido a cadena segura.
+    const text = String(value ?? '');
+
+    // Comentario: Sustituir caracteres especiales para evitar inyección HTML.
+    return text.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+  };
+
+  // Comentario: Normalizar color Bootstrap a una lista cerrada.
+  const safeColor = (color) => {
+    // Comentario: Definir colores permitidos por Bootstrap para badges.
+    const allowedColors = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'];
+
+    // Comentario: Devolver color recibido solo si pertenece al catálogo permitido.
+    return allowedColors.includes(color) ? color : 'secondary';
+  };
+
+  // Comentario: Normalizar icono Bootstrap Icons a un patrón conservador.
+  const safeIcon = (icon) => {
+    // Comentario: Convertir icono a texto para validarlo.
+    const value = String(icon ?? 'bi-circle');
+
+    // Comentario: Permitir solo clases de Bootstrap Icons simples.
+    return /^bi-[a-z0-9-]+$/.test(value) ? value : 'bi-circle';
+  };
+
+  // Comentario: Definir KPIs visibles en el dashboard con fallback local.
+  let kpis = [
     { etiqueta: 'Estado', valor: 'NORMAL', icono: 'bi-fire', color: 'success' },
     { etiqueta: 'Agua', valor: '72.5 °C', icono: 'bi-thermometer-half', color: 'info' },
     { etiqueta: 'Humos', valor: '214 °C', icono: 'bi-wind', color: 'warning' },
@@ -87,10 +114,10 @@
         <div class="card bg-card border-secondary h-100">
           <div class="card-body">
             <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="badge text-bg-${kpi.color}"><i class="bi ${kpi.icono}"></i></span>
-              <span class="small text-secondary-emphasis">${kpi.etiqueta}</span>
+              <span class="badge text-bg-${safeColor(kpi.color)}"><i class="bi ${safeIcon(kpi.icono)}"></i></span>
+              <span class="small text-secondary-emphasis">${escapeHtml(kpi.etiqueta)}</span>
             </div>
-            <strong class="fs-5">${kpi.valor}</strong>
+            <strong class="fs-5">${escapeHtml(kpi.valor)}</strong>
           </div>
         </div>
       </div>
@@ -110,14 +137,14 @@
       }
 
       // Comentario: Crear lista segura con textos internos controlados.
-      const elementos = seccion.elementos.map((elemento) => `<li class="list-group-item bg-card text-light border-secondary">${elemento}</li>`).join('');
+      const elementos = seccion.elementos.map((elemento) => `<li class="list-group-item bg-card text-light border-secondary">${escapeHtml(elemento)}</li>`).join('');
 
       // Comentario: Insertar estructura visual común para la sección.
       panel.innerHTML = `
         <div class="card bg-card border-secondary shadow-sm">
           <div class="card-body">
-            <h2 class="h3">${seccion.titulo}</h2>
-            <p class="text-secondary-emphasis">${seccion.descripcion}</p>
+            <h2 class="h3">${escapeHtml(seccion.titulo)}</h2>
+            <p class="text-secondary-emphasis">${escapeHtml(seccion.descripcion)}</p>
             <ul class="list-group list-group-flush">${elementos}</ul>
           </div>
         </div>
@@ -172,6 +199,110 @@
 
     // Comentario: Crear gráfica de estados del día.
     crearGrafica('graficaEstados', 'doughnut', ['OFF', 'NORMAL', 'MOD', 'MAN'], [8, 10, 4, 2], 'Horas', '#60a5fa');
+  };
+
+  // Comentario: Actualizar secciones locales con datos recibidos del backend.
+  const actualizarSeccionesDesdeDashboard = (sections) => {
+    // Comentario: Salir si el backend no devolvió objeto de secciones.
+    if (!sections || typeof sections !== 'object') {
+      return;
+    }
+
+    // Comentario: Recorrer secciones conocidas para evitar claves no esperadas.
+    Object.keys(secciones).forEach((clave) => {
+      // Comentario: Obtener sección remota coincidente.
+      const remoteSection = sections[clave];
+
+      // Comentario: Validar que exista lista de elementos.
+      if (!Array.isArray(remoteSection?.items)) {
+        return;
+      }
+
+      // Comentario: Sustituir elementos por textos normalizados desde API.
+      secciones[clave].elementos = remoteSection.items.map((item) => String(item));
+    });
+  };
+
+  // Comentario: Normalizar KPIs recibidos desde backend al formato visual local.
+  const normalizarKpis = (remoteKpis) => {
+    // Comentario: Mantener KPIs actuales si la respuesta no es una lista.
+    if (!Array.isArray(remoteKpis)) {
+      return kpis;
+    }
+
+    // Comentario: Convertir cada KPI remoto a estructura visual esperada.
+    return remoteKpis.map((item) => ({
+      etiqueta: String(item.label ?? 'KPI'),
+      valor: String(item.value ?? 'N/D'),
+      icono: safeIcon(item.icon),
+      color: safeColor(item.color),
+    }));
+  };
+
+  // Comentario: Cargar snapshot del dashboard desde la API con fallback local.
+  const cargarDashboard = async () => {
+    // Comentario: Localizar estado visual de actualización.
+    const estado = document.querySelector('#dashboardEstadoApi');
+
+    // Comentario: Informar inicio de carga si existe el indicador.
+    if (estado) {
+      estado.textContent = 'Actualizando datos del backend...';
+    }
+
+    // Comentario: Solicitar snapshot agregado al backend PHP.
+    const respuesta = await fetch(`${API_BASE_URL}/dashboard.php?device_id=caldera-01`, { credentials: 'include' }).catch(() => null);
+
+    // Comentario: Mantener fallback local si no hay backend disponible.
+    if (!respuesta) {
+      if (estado) {
+        estado.textContent = 'Backend no disponible: usando datos demo locales.';
+      }
+      return;
+    }
+
+    // Comentario: Decodificar JSON de dashboard.
+    const data = await respuesta.json().catch(() => null);
+
+    // Comentario: Mantener fallback si la API responde error o contrato inesperado.
+    if (!respuesta.ok || !data?.success || !data?.data) {
+      if (estado) {
+        estado.textContent = data?.error?.message || 'Dashboard API no disponible: usando fallback.';
+      }
+      return;
+    }
+
+    // Comentario: Actualizar KPIs con valores de API.
+    kpis = normalizarKpis(data.data.kpis);
+
+    // Comentario: Actualizar secciones con valores de API.
+    actualizarSeccionesDesdeDashboard(data.data.sections);
+
+    // Comentario: Renderizar KPIs actualizados.
+    renderKpis();
+
+    // Comentario: Renderizar secciones actualizadas.
+    renderSecciones();
+
+    // Comentario: Informar origen de datos al usuario.
+    if (estado) {
+      estado.textContent = `Datos cargados desde ${data.data.source || 'backend'} · ${data.data.generated_at || ''}`;
+    }
+  };
+
+  // Comentario: Activar botón manual de actualización del dashboard.
+  const activarActualizacionDashboard = () => {
+    // Comentario: Localizar botón de actualización.
+    const boton = document.querySelector('#btnActualizarDashboard');
+
+    // Comentario: Salir si el botón no existe.
+    if (!boton) {
+      return;
+    }
+
+    // Comentario: Registrar recarga manual del snapshot.
+    boton.addEventListener('click', () => {
+      cargarDashboard();
+    });
   };
 
   // Comentario: Activar navegación SPA ligera entre secciones.
@@ -328,6 +459,12 @@
 
     // Comentario: Activar navegación interna.
     activarNavegacion();
+
+    // Comentario: Activar botón de actualización del dashboard.
+    activarActualizacionDashboard();
+
+    // Comentario: Cargar snapshot inicial desde API con fallback seguro.
+    cargarDashboard();
 
     // Comentario: Activar login real preparado contra PHP.
     activarLogin();

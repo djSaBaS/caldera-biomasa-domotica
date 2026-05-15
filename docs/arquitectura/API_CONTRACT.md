@@ -172,6 +172,34 @@ GET /api/index.php
 
 Devuelve versión, estado, disponibilidad de base de datos y endpoints disponibles.
 
+## Dashboard
+
+```http
+GET /api/dashboard.php?device_id=caldera-01
+```
+
+Devuelve un snapshot agregado para el panel web con KPIs y secciones. No requiere API key en esta fase porque sirve también como fallback de demo, pero en producción debe protegerse con sesión web o permisos equivalentes.
+
+Respuesta resumida:
+
+```json
+{
+  "success": true,
+  "data": {
+    "device_id": "caldera-01",
+    "source": "fallback_safe",
+    "generated_at": "2026-05-15T00:00:00+00:00",
+    "kpis": [],
+    "sections": {}
+  },
+  "error": null,
+  "meta": {
+    "persistence": "fallback_safe",
+    "authenticated_required": false
+  }
+}
+```
+
 ## Telemetría
 
 ```http

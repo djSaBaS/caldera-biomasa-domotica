@@ -8,7 +8,7 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 **Versión:** `0.4.3-firmware-offline-config`
 **Fecha:** 2026-05-14
-**Estado:** base de desarrollo con backend PHP, persistencia MySQL opcional, datos demo, tests, CI y firmware con cache offline de configuración.
+**Estado:** base de desarrollo con backend PHP, dashboard API, frontend sincronizado, persistencia MySQL opcional, datos demo, tests, CI y firmware con cache offline de configuración.
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
@@ -70,6 +70,7 @@ Endpoints iniciales:
 - `GET /api/auth_me.php`
 - `POST /api/auth_logout.php`
 - `POST /api/password_reset_request.php`
+- `GET /api/dashboard.php?device_id=caldera-01`
 - `GET /api/csrf_token.php`
 - `GET|POST /api/users.php`
 - `GET|POST /api/devices.php`
@@ -174,6 +175,16 @@ mysql -u usuario_desarrollo -p caldera_biomasa < server/sql/seed_demo_preview.sq
 El usuario demo es `demo_admin` y la clave usada para generar el hash documentado es ficticia y no productiva. Si se reutiliza este seed en una demo compartida, conviene regenerar hashes locales antes de exponer el entorno.
 
 Incluye tablas para usuarios, roles, dispositivos, telemetría, configuración, comandos, eventos, alarmas, combustible, mantenimiento, notificaciones y ajustes del sistema.
+
+## Dashboard API
+
+El panel consulta un snapshot agregado en:
+
+```text
+GET /api/dashboard.php?device_id=caldera-01
+```
+
+El endpoint devuelve KPIs y secciones listas para el frontend. Si MySQL no está disponible, responde con datos fallback seguros para modo demo en lugar de romper la interfaz.
 
 ## Frontend
 

@@ -60,6 +60,8 @@ require_once __DIR__ . '/Services/EventRepository.php';
 require_once __DIR__ . '/Services/FuelRepository.php';
 // Comentario: Cargar repositorio de mantenimiento.
 require_once __DIR__ . '/Services/MaintenanceRepository.php';
+// Comentario: Cargar repositorio agregado de dashboard para el panel web.
+require_once __DIR__ . '/Services/DashboardRepository.php';
 // Comentario: Cargar servicio de autenticación con sesiones PHP.
 require_once __DIR__ . '/Services/AuthService.php';
 // Comentario: Cargar autorización por roles para endpoints del panel.

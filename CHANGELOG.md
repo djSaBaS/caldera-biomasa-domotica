@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.4.5-dashboard-api-frontend] - 2026-05-15
+
+### Añadido
+
+- Endpoint `server/api/dashboard.php` con snapshot agregado de KPIs y secciones para el panel.
+- `DashboardRepository` con fallback seguro cuando MySQL no está disponible o faltan tablas.
+- Frontend sincronizado con la nueva API de dashboard y botón manual de actualización.
+- Validaciones unitarias y smoke test para cubrir el nuevo dashboard.
+
+### Seguridad
+
+- El frontend escapa valores dinámicos antes de renderizar KPIs y secciones.
+- El dashboard mantiene modo fallback explícito para no depender de una base incompleta durante desarrollo.
+
 ## [0.4.4-ci-arduino-cli-diagramas] - 2026-05-14
 
 ### Añadido

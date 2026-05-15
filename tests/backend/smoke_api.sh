@@ -33,6 +33,9 @@ curl -fsS -X POST "${API_BASE_URL}/telemetry.php" \
 curl -fsS "${API_BASE_URL}/config.php?device_id=caldera-01" \
   -H "X-API-KEY: ${DEVICE_API_KEY}" >/tmp/caldera_api_config.json
 
+# Comentario: Probar snapshot agregado de dashboard con fallback seguro.
+curl -fsS "${API_BASE_URL}/dashboard.php?device_id=caldera-01" >/tmp/caldera_api_dashboard.json
+
 # Comentario: Probar cola de comandos segura.
 curl -fsS "${API_BASE_URL}/command.php?device_id=caldera-01" \
   -H "X-API-KEY: ${DEVICE_API_KEY}" >/tmp/caldera_api_command.json
