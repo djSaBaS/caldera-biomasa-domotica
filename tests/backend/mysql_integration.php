@@ -105,8 +105,8 @@ $fuelSummary = FuelRepository::summary($connection);
 // Comentario: Validar que el seed demo creó compras de combustible.
 assert_true((float) ($fuelSummary['kg_comprados'] ?? 0) > 0, 'FuelRepository lee compras demo desde MySQL.');
 
-// Comentario: Limpiar base temporal al finalizar correctamente.
-$adminConnection->exec('DROP DATABASE IF EXISTS `' . $database . '`');
+// Comentario: Conservar la base temporal para que las pruebas HTTP autenticadas reutilicen el mismo esquema y seed.
+echo 'Base MySQL de integración preparada para pruebas posteriores: ' . $database . PHP_EOL;
 
 // Comentario: Informar integración correcta.
 echo 'Integración MySQL completada correctamente.' . PHP_EOL;

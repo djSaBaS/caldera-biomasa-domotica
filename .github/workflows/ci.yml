@@ -93,9 +93,14 @@ jobs:
       - name: Compilar firmware Arduino
         run: tests/firmware/compile_firmware.sh
 
-      # Comentario: Levantar backend PHP embebido para pruebas de humo HTTP sin MySQL obligatorio.
+      # Comentario: Levantar backend PHP embebido con la misma base MySQL preparada por la integración.
       - name: Arrancar API local
         env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: caldera_biomasa_ci
+          DB_USER: root
+          DB_PASS: root
           DEVICE_API_KEY: clave-local-pruebas-hardening-no-productiva-123456
         run: |
           php -S 127.0.0.1:8091 -t server > /tmp/caldera-api.log 2>&1 &
@@ -108,6 +113,12 @@ jobs:
           API_BASE_URL: http://127.0.0.1:8091/api
           DEVICE_API_KEY: clave-local-pruebas-hardening-no-productiva-123456
         run: tests/backend/smoke_api.sh
+
+      # Comentario: Ejecutar recorrido HTTP autenticado real contra sesión, CSRF y MySQL efímero.
+      - name: Ejecutar API autenticada
+        env:
+          API_BASE_URL: http://127.0.0.1:8091/api
+        run: tests/backend/authenticated_http_api.sh
 
       # Comentario: Mostrar log de backend solo si falla alguna prueba HTTP.
       - name: Mostrar log API si falla
