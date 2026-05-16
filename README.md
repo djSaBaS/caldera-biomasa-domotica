@@ -2,16 +2,15 @@
 
 Proyecto de domotización, automatización y monitorización remota de una caldera de biomasa Pasqualicchio / CS Marina.
 
-El objetivo no es inventar una caldera nueva, sino replicar de forma fiel el funcionamiento original de la centralita, añadir conectividad, registro histórico, panel web, configuración remota y alertas, manteniendo siempre la posibilidad de volver al sistema original.
+El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica original, añadir registro, panel web, configuración remota y alertas, manteniendo siempre la posibilidad de volver al sistema original.
 
-## Stack previsto
+## Estado actual
 
-- Firmware principal: Arduino Mega 2560 / Elegoo Mega 2560 R3.
-- Conectividad: ESP32.
-- Backend: PHP + MySQL.
-- Frontend: HTML, CSS y JavaScript.
-- Comunicación inicial recomendada: HTTP/JSON con modelo pull desde el dispositivo.
-- Alertas futuras: email, Telegram y WhatsApp.
+**Versión:** `0.4.6-dashboard-protegido-mysql-ci`
+**Fecha:** 2026-05-15
+**Estado:** base de desarrollo con backend PHP, dashboard protegido por sesión, frontend sincronizado, persistencia MySQL opcional, integración MySQL efímera en CI, datos demo, tests y firmware con cache offline de configuración.
+
+Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
 ## Principios innegociables
 
@@ -20,31 +19,274 @@ El objetivo no es inventar una caldera nueva, sino replicar de forma fiel el fun
 3. La lógica debe respetar los manuales originales de la caldera.
 4. El sinfín trabaja por tiempo, no por PID directo.
 5. El tiempo de sinfín encendido debe ser igual al tiempo de pausa.
-6. La web puede modificar configuración, pero el firmware debe validar los límites.
+6. La web puede modificar configuración, pero el firmware debe validar límites.
 7. Ninguna orden remota debe saltarse condiciones críticas de seguridad.
+8. Si falla un sensor crítico, se debe pasar a modo seguro.
+9. Si hay alarma, no se debe permitir encendido remoto.
+10. Si no hay internet, la caldera debe continuar de forma segura con configuración local.
+
+## Stack previsto
+
+- Arduino Mega 2560 / Elegoo Mega 2560 R3 para control crítico local.
+- ESP32 para conectividad WiFi y puente HTTP/JSON.
+- PHP 8+ sin framework pesado para backend.
+- MySQL/MariaDB con InnoDB y utf8mb4.
+- HTML, CSS, JavaScript vanilla y Bootstrap 5 para frontend.
+- Chart.js para gráficas iniciales.
 
 ## Estructura del repositorio
 
 ```text
 docs/                      Documentación técnica, seguridad, Codex y lógica original.
-firmware/arduino-mega/      Control crítico de sensores, relés, estados y seguridad.
-firmware/esp32/             Conectividad WiFi, API, telemetría y comandos.
-server/                     Backend PHP + MySQL.
-web/                        Panel visual y assets frontend.
+firmware/arduino-mega/      Control crítico simulado de sensores, estados y salidas.
+firmware/esp32/             Conectividad WiFi/HTTP simulada y puente serie.
+server/api/                 Endpoints PHP consumidos por dispositivo y panel.
+server/app/                 Núcleo PHP común, configuración, repositorios y servicios.
+server/public/              Entrada pública mínima del backend.
+server/sql/                 Esquema SQL inicial, seed de desarrollo y seed demo de previsualización.
+server/storage/             Logs y almacenamiento futuro.
+web/                        Panel Bootstrap mobile-first.
 tools/                      Scripts auxiliares.
-tests/                      Pruebas futuras.
+tests/                      Pruebas de humo y pruebas futuras.
 ```
 
-## Documentos importantes
+## Backend PHP
 
-- `docs/codex/PROMPT_CODEX_MASTER.md`
-- `docs/arquitectura/LOGICA_ORIGINAL_CALDERA.md`
-- `docs/arquitectura/ARQUITECTURA_GENERAL.md`
-- `docs/seguridad/REGLAS_SEGURIDAD.md`
-- `docs/arquitectura/API_CONTRACT.md`
-- `docs/arquitectura/HARDWARE.md`
-- `version.md`
+La API usa respuestas JSON consistentes:
 
-## Estado actual
+```json
+{
+  "success": true,
+  "data": {},
+  "error": null,
+  "meta": {}
+}
+```
 
-Carga inicial del repositorio con estructura, documentación base y archivos mínimos para empezar a trabajar con Codex desde GitHub.
+Endpoints iniciales:
+
+- `GET /api/index.php`
+- `POST /api/auth_login.php`
+- `GET /api/auth_me.php`
+- `POST /api/auth_logout.php`
+- `POST /api/password_reset_request.php`
+- `GET /api/dashboard.php?device_id=caldera-01`
+- `GET /api/csrf_token.php`
+- `GET|POST /api/users.php`
+- `GET|POST /api/devices.php`
+- `POST /api/telemetry.php`
+- `GET /api/config.php?device_id=caldera-01`
+- `GET /api/command.php?device_id=caldera-01`
+- `POST /api/command_request.php`
+- `POST /api/config_ack.php`
+- `POST /api/events.php`
+- `GET|POST /api/fuel.php`
+- `GET|POST /api/maintenance.php`
+
+Los endpoints de dispositivo requieren cabecera:
+
+```http
+X-API-KEY: clave-local-larga-generada-fuera-de-git
+```
+
+La clave debe ser larga, local y no versionada. Los placeholders públicos como `cambiar_en_local` se rechazan para fallar cerrado ante errores de configuración.
+
+## Configuración local
+
+Copia el ejemplo de entorno y ajusta valores locales sin subir secretos:
+
+```bash
+cp server/.env.example server/.env
+```
+
+El archivo `server/.env` queda ignorado por Git.
+
+## Autenticación Sprint 02
+
+El login real usa:
+
+- tabla `users`,
+- tabla `roles`,
+- `password_hash()` para crear hashes,
+- `password_verify()` para validar contraseñas,
+- sesiones PHP con cookie HTTP-only,
+- restablecimiento preparado mediante token hasheado,
+- autorización por roles para endpoints administrativos,
+- protección CSRF para operaciones web mutables,
+- gestión base de usuarios y dispositivos.
+
+Para crear un hash local:
+
+```bash
+php tools/scripts/generar_hash_password.php 'una-contraseña-larga-local'
+```
+
+Después se puede usar `server/sql/seed_development.example.sql` como plantilla, sustituyendo los placeholders por hashes generados localmente.
+
+
+
+## Rate limiting básico
+
+La API incorpora un limitador local sin dependencias para reducir abuso en puntos sensibles:
+
+- login: 5 intentos por usuario/IP cada 5 minutos,
+- restablecimiento de contraseña: 3 solicitudes por email/IP cada 15 minutos,
+- endpoints de dispositivo: 120 peticiones por API key/IP cada minuto.
+
+Los contadores se guardan en `server/storage/rate-limit/` y no se versionan.
+
+## Administración web segura
+
+La base administrativa ya permite separar endpoints de dispositivo y endpoints de panel:
+
+- `csrf_token.php` entrega un token CSRF solo a sesiones autenticadas.
+- `users.php` exige rol `administrador` para listar, crear o editar usuarios.
+- `devices.php` exige sesión para listar y rol `administrador` con CSRF para crear o editar dispositivos.
+- `command_request.php` exige sesión, rol operativo, CSRF, MySQL disponible y dispositivo registrado.
+
+El encendido remoto (`START`) sigue bloqueado salvo que `REMOTE_START_ALLOWED=true`, y aun así el firmware debe volver a validar condiciones locales.
+
+## Base de datos
+
+El esquema inicial está en:
+
+```text
+server/sql/schema.sql
+```
+
+El seed local de ejemplo está en:
+
+```text
+server/sql/seed_development.example.sql
+```
+
+El seed de previsualización demo está en:
+
+```text
+server/sql/seed_demo_preview.sql
+```
+
+Para cargarlo en un entorno local con MySQL ya inicializado:
+
+```bash
+mysql -u usuario_desarrollo -p caldera_biomasa < server/sql/seed_demo_preview.sql
+```
+
+El usuario demo es `demo_admin` y la clave usada para generar el hash documentado es ficticia y no productiva. Si se reutiliza este seed en una demo compartida, conviene regenerar hashes locales antes de exponer el entorno.
+
+Incluye tablas para usuarios, roles, dispositivos, telemetría, configuración, comandos, eventos, alarmas, combustible, mantenimiento, notificaciones y ajustes del sistema.
+
+## Dashboard API
+
+El panel consulta un snapshot agregado en:
+
+```text
+GET /api/dashboard.php?device_id=caldera-01
+```
+
+El endpoint devuelve KPIs y secciones listas para el frontend, pero ahora exige sesión con rol `administrador`, `operador`, `solo_lectura` o `mantenimiento`. Si MySQL no está disponible tras autenticar, responde con datos fallback seguros para no romper la interfaz de desarrollo.
+
+## Frontend
+
+El panel está en:
+
+```text
+web/index.html
+```
+
+Incluye login visual conectado al backend, dashboard con KPIs simulados, menú offcanvas móvil, sidebar escritorio, gráficas Chart.js y secciones iniciales.
+
+Por defecto, el JavaScript llama a:
+
+```text
+http://localhost:8081/api
+```
+
+En despliegue real se debe configurar `window.APP_API_BASE_URL` antes de cargar `web/assets/js/app.js`.
+
+## Firmware
+
+### Arduino Mega
+
+Archivo principal:
+
+```text
+firmware/arduino-mega/src/main.ino
+```
+
+Incluye `SIMULATION_MODE = true`, máquina de estados base, sensores simulados, salidas simuladas, seguridad local básica, ciclo del sinfín ON = OFF, telemetría `TEL:{json}` hacia ESP32 y cache EEPROM de la última configuración válida para trabajar sin internet.
+
+### ESP32
+
+Archivo principal:
+
+```text
+firmware/esp32/src/main.ino
+```
+
+Incluye `SIMULATION_MODE = true`, placeholders WiFi, envío HTTP de telemetría cuando se habilite red, consulta de configuración, envío `CFG:` hacia Arduino, recepción `ACK:` y reenvío de confirmaciones al backend.
+
+### Configuración offline de caldera
+
+La configuración remota vive en MySQL, pero Arduino Mega guarda en EEPROM la última configuración válida que recibe desde ESP32. Si se pierde internet, Arduino sigue usando esos parámetros locales y no depende del backend para reglas críticas como bomba, temperatura objetivo, seguridad o ciclo del sinfín.
+
+Flujo actual:
+
+1. Arduino envía `TEL:{json}` por `Serial1`.
+2. ESP32 envía el JSON a `POST /api/telemetry.php`.
+3. ESP32 consulta `GET /api/config.php?device_id=caldera-01`.
+4. ESP32 transforma la respuesta en una trama `CFG:` compacta.
+5. Arduino valida rangos, aplica, guarda en EEPROM y responde `ACK:{json}`.
+6. ESP32 reenvía el ACK a `POST /api/config_ack.php`.
+
+Sinceramente: todavía no usaría esto en producción real. Falta probarlo con hardware, cortes de alimentación, respuestas HTTP corruptas y watchdog. La decisión correcta ahora es mantener `SIMULATION_MODE=true` hasta pasar banco de pruebas.
+
+Los diagramas de conexión mantenidos están en:
+
+```text
+docs/arquitectura/CONEXIONES.md
+```
+
+Actualmente solo está documentado como cableado real el UART Arduino Mega↔ESP32. Los accesorios de caldera aparecen como pinout pendiente para evitar inventar conexiones no validadas.
+
+## Cómo probar en desarrollo
+
+### Ejecutar puerta de calidad local
+
+```bash
+tests/backend/run_quality_checks.sh
+```
+
+### Ejecutar pruebas unitarias backend
+
+```bash
+php tests/backend/run_unit_tests.php
+```
+
+### Validar sintaxis PHP
+
+```bash
+find server -name '*.php' -print0 | xargs -0 -n1 php -l
+```
+
+### Servir backend
+
+```bash
+php -S localhost:8081 -t server
+```
+
+### Ejecutar prueba de humo
+
+```bash
+tests/backend/smoke_api.sh
+```
+
+### Servir panel web
+
+```bash
+php -S localhost:8080 -t web
+```
+
+## Advertencia de seguridad
+
+Este repositorio está preparado para desarrollo y banco de pruebas. No está validado para controlar una caldera real ni cargas de 230V. Cualquier integración física debe pasar por revisión eléctrica, pruebas con cargas seguras y validación de la lógica original.

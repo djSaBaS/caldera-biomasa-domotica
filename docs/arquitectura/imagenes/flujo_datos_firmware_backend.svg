@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Flujo real de datos firmware a backend</title>
+  <desc id="desc">Diagrama lógico de telemetría y configuración: Arduino envía TEL al ESP32, ESP32 publica en API PHP, backend persiste en MySQL y devuelve configuración que ESP32 reenvía como CFG.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1d4ed8" />
+    </marker>
+    <style>
+      .box { fill: #f8fafc; stroke: #1e293b; stroke-width: 3; rx: 16; }
+      .db { fill: #ecfeff; stroke: #0e7490; stroke-width: 3; }
+      .title { font-family: Arial, sans-serif; font-size: 26px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .small { font-family: Arial, sans-serif; font-size: 15px; fill: #334155; }
+      .arrow { fill: none; stroke: #1d4ed8; stroke-width: 4; marker-end: url(#arrow); }
+      .back { fill: none; stroke: #0f766e; stroke-width: 4; marker-end: url(#arrow); stroke-dasharray: 8 8; }
+    </style>
+  </defs>
+  <rect width="1200" height="560" fill="#ffffff" />
+  <text x="50" y="52" class="title">Flujo firmware → API → MySQL y configuración offline</text>
+  <rect x="55" y="130" width="230" height="130" class="box" />
+  <text x="85" y="175" class="label">Arduino Mega</text>
+  <text x="85" y="204" class="small">Control local crítico</text>
+  <text x="85" y="230" class="small">Cache EEPROM</text>
+  <rect x="365" y="130" width="230" height="130" class="box" />
+  <text x="410" y="175" class="label">ESP32</text>
+  <text x="410" y="204" class="small">Puente WiFi/HTTP</text>
+  <text x="410" y="230" class="small">Serial2 + API key</text>
+  <rect x="675" y="130" width="230" height="130" class="box" />
+  <text x="725" y="175" class="label">API PHP</text>
+  <text x="710" y="204" class="small">/telemetry.php</text>
+  <text x="710" y="230" class="small">/config.php + /config_ack.php</text>
+  <ellipse cx="1060" cy="195" rx="95" ry="62" class="db" />
+  <text x="1018" y="188" class="label">MySQL</text>
+  <text x="995" y="216" class="small">telemetry / config</text>
+  <path d="M285 175 L365 175" class="arrow" />
+  <text x="302" y="158" class="small">TEL:{json}</text>
+  <path d="M595 175 L675 175" class="arrow" />
+  <text x="608" y="158" class="small">POST telemetría</text>
+  <path d="M905 175 L970 175" class="arrow" />
+  <text x="916" y="158" class="small">persistir</text>
+  <path d="M970 225 C840 330 620 330 595 225" class="back" />
+  <text x="690" y="350" class="small">GET config.php</text>
+  <path d="M365 225 C260 335 170 335 170 260" class="back" />
+  <text x="190" y="350" class="small">CFG: parámetros validados</text>
+  <path d="M170 260 C235 430 415 430 480 260" class="back" />
+  <text x="255" y="455" class="small">ACK:{json} aplicado/rechazado</text>
+  <text x="55" y="515" class="small">Si no hay red, Arduino mantiene la última configuración válida en EEPROM y no depende de MySQL para seguridad local.</text>
+</svg>

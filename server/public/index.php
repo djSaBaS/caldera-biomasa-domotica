@@ -3,5 +3,12 @@
 // Comentario: Declarar tipos estrictos para mantener código predecible.
 declare(strict_types=1);
 
-// Comentario: Mostrar mensaje mínimo de estado del servidor.
-echo 'Caldera Biomasa Domótica - Backend inicial';
+// Comentario: Cargar núcleo común para responder como JSON en la entrada pública.
+require_once __DIR__ . '/../app/bootstrap.php';
+
+// Comentario: Responder estado de backend con enlace lógico a la API.
+JsonResponse::success([
+    'mensaje' => 'Backend de Caldera Biomasa Domótica operativo en modo seguro Sprint 02.',
+    'version' => '0.4.1-rate-limit-basico',
+    'api' => '/api/index.php',
+]);
