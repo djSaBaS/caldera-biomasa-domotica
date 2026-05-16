@@ -6,9 +6,9 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.4.3-firmware-offline-config`
-**Fecha:** 2026-05-14
-**Estado:** base de desarrollo con backend PHP, dashboard API, frontend sincronizado, persistencia MySQL opcional, datos demo, tests, CI y firmware con cache offline de configuración.
+**Versión:** `0.4.6-dashboard-protegido-mysql-ci`
+**Fecha:** 2026-05-15
+**Estado:** base de desarrollo con backend PHP, dashboard protegido por sesión, frontend sincronizado, persistencia MySQL opcional, integración MySQL efímera en CI, datos demo, tests y firmware con cache offline de configuración.
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
@@ -184,7 +184,7 @@ El panel consulta un snapshot agregado en:
 GET /api/dashboard.php?device_id=caldera-01
 ```
 
-El endpoint devuelve KPIs y secciones listas para el frontend. Si MySQL no está disponible, responde con datos fallback seguros para modo demo en lugar de romper la interfaz.
+El endpoint devuelve KPIs y secciones listas para el frontend, pero ahora exige sesión con rol `administrador`, `operador`, `solo_lectura` o `mantenimiento`. Si MySQL no está disponible tras autenticar, responde con datos fallback seguros para no romper la interfaz de desarrollo.
 
 ## Frontend
 

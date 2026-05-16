@@ -17,7 +17,7 @@ JsonResponse::success(
     [
         'estado' => 'ok',
         'proyecto' => 'caldera-biomasa-domotica',
-        'version' => '0.4.5-dashboard-api-frontend',
+        'version' => '0.4.6-dashboard-protegido-mysql-ci',
         'modo' => 'desarrollo-seguro',
         'database_available' => $databaseAvailable,
         'endpoints' => [

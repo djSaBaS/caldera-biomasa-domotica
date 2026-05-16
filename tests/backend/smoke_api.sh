@@ -33,8 +33,14 @@ curl -fsS -X POST "${API_BASE_URL}/telemetry.php" \
 curl -fsS "${API_BASE_URL}/config.php?device_id=caldera-01" \
   -H "X-API-KEY: ${DEVICE_API_KEY}" >/tmp/caldera_api_config.json
 
-# Comentario: Probar snapshot agregado de dashboard con fallback seguro.
-curl -fsS "${API_BASE_URL}/dashboard.php?device_id=caldera-01" >/tmp/caldera_api_dashboard.json
+# Comentario: Probar que dashboard protegido rechaza acceso sin sesión.
+dashboard_status=$(curl -s -o /tmp/caldera_api_dashboard_noauth.json -w '%{http_code}' "${API_BASE_URL}/dashboard.php?device_id=caldera-01")
+
+# Comentario: Fallar si dashboard permite acceso anónimo.
+if [[ "${dashboard_status}" != "401" ]]; then
+  echo "Error: dashboard.php permitió acceso sin sesión." >&2
+  exit 1
+fi
 
 # Comentario: Probar cola de comandos segura.
 curl -fsS "${API_BASE_URL}/command.php?device_id=caldera-01" \

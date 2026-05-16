@@ -27,3 +27,5 @@ La variable `API_BASE_URL` permite apuntar a otro puerto durante CI o pruebas lo
 - `run_quality_checks.sh`: puerta local de calidad con lint PHP, JS, Bash, pruebas unitarias y validación del seed demo.
 - `run_unit_tests.php`: primeras pruebas unitarias del núcleo backend sin dependencias externas.
 - `validate_demo_seed.php`: validación estática del seed de previsualización demo.
+
+- `mysql_integration.php`: prueba de integración con MySQL real efímero para esquema, seed, login, repositorios y dashboard protegido.

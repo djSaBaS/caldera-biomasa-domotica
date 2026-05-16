@@ -9,6 +9,9 @@ require_once __DIR__ . '/../app/bootstrap.php';
 // Comentario: Permitir solo consulta de dashboard mediante GET.
 Request::requireMethod(['GET']);
 
+// Comentario: Exigir sesión y rol de lectura antes de exponer datos operativos del panel.
+$user = AuthorizationService::requireAnyRole(['administrador', 'operador', 'solo_lectura', 'mantenimiento']);
+
 // Comentario: Obtener identificador opcional de dispositivo para filtrar snapshot.
 $deviceUid = Request::queryString('device_id', 80);
 
@@ -23,6 +26,7 @@ JsonResponse::success(
     $snapshot,
     [
         'persistence' => $snapshot['source'] === 'database' ? 'database' : 'fallback_safe',
-        'authenticated_required' => false,
+        'authenticated_required' => true,
+        'user_role' => (string) ($user['role'] ?? ''),
     ]
 );

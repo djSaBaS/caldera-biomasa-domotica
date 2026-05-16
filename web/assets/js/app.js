@@ -389,6 +389,9 @@
 
       // Comentario: Confirmar autenticación correcta.
       mostrarResultado(resultado, `Sesión iniciada como ${data.data.user.username}. Token CSRF ${csrfToken ? 'preparado' : 'pendiente'}.`, 'success');
+
+      // Comentario: Recargar dashboard protegido tras abrir sesión válida.
+      cargarDashboard();
     });
   };
 

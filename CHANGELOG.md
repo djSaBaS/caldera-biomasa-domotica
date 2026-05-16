@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [0.4.6-dashboard-protegido-mysql-ci] - 2026-05-15
+
+### Añadido
+
+- Protección de `dashboard.php` mediante sesión y roles de panel.
+- Prueba de integración `tests/backend/mysql_integration.php` contra MySQL real efímero.
+- Servicio MySQL 8.4 en GitHub Actions para validar esquema, seed, login, repositorios y dashboard con datos reales.
+
+### Cambiado
+
+- El smoke test espera HTTP 401 si `dashboard.php` se consulta sin sesión.
+- El frontend recarga el dashboard protegido tras login correcto.
+
+### Seguridad
+
+- El dashboard deja de ser demo pública y pasa a requerir autorización explícita.
+
 ## [0.4.5-dashboard-api-frontend] - 2026-05-15
 
 ### Añadido

@@ -21,8 +21,26 @@ jobs:
     name: Puerta de calidad PHP, JS, SQL y API
     # Comentario: Usar Ubuntu mantenido por GitHub para herramientas estándar.
     runs-on: ubuntu-latest
+    # Comentario: Levantar MySQL efímero para pruebas de integración reales.
+    services:
+      mysql:
+        # Comentario: Usar imagen oficial MySQL 8 para validar compatibilidad del esquema.
+        image: mysql:8.4
+        # Comentario: Configurar credenciales no productivas exclusivas del runner CI.
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: caldera_biomasa_ci
+        # Comentario: Publicar puerto local para PDO desde PHP en el runner.
+        ports:
+          - 3306:3306
+        # Comentario: Esperar a que MySQL acepte conexiones antes de ejecutar tests.
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     # Comentario: Fijar timeout razonable para evitar ejecuciones colgadas.
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       # Comentario: Descargar el código del repositorio en el runner.
       - name: Checkout
@@ -33,6 +51,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          extensions: pdo_mysql, mysqli
           coverage: none
 
       # Comentario: Instalar Node.js para validación sintáctica del frontend.
@@ -59,6 +78,16 @@ jobs:
       # Comentario: Ejecutar lint, pruebas unitarias y validaciones estáticas del repositorio.
       - name: Ejecutar puerta de calidad
         run: tests/backend/run_quality_checks.sh
+
+      # Comentario: Ejecutar integración real contra MySQL efímero con esquema completo.
+      - name: Ejecutar integración MySQL
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: caldera_biomasa_ci
+          DB_USER: root
+          DB_PASS: root
+        run: php tests/backend/mysql_integration.php
 
       # Comentario: Compilar firmware Arduino Mega y ESP32 con Arduino CLI.
       - name: Compilar firmware Arduino

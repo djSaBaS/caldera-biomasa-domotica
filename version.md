@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-**0.4.5-dashboard-api-frontend**
+**0.4.6-dashboard-protegido-mysql-ci**
 
 ## Fecha
 
@@ -10,9 +10,11 @@
 
 ## Estado
 
-Base de desarrollo con autenticación PHP, administración web segura inicial, dashboard API, frontend sincronizado, rate limiting básico, seed demo, tests, CI con Arduino CLI, firmware con puente ESP32 y cache offline EEPROM, diagramas de conexión documentados, persistencia MySQL opcional, modo degradado seguro y simulación activa.
+Base de desarrollo con autenticación PHP, administración web segura inicial, dashboard protegido por sesión, frontend sincronizado, rate limiting básico, seed demo, tests, CI con Arduino CLI y MySQL efímero, firmware con puente ESP32 y cache offline EEPROM, diagramas de conexión documentados, persistencia MySQL opcional, modo degradado seguro y simulación activa.
 
 ## Incluye
+
+- Dashboard protegido por sesión y roles con integración MySQL efímera en CI.
 
 - Dashboard API con KPIs agregados, fallback seguro y frontend sincronizado.
 
