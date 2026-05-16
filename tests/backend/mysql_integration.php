@@ -30,8 +30,17 @@ if (!preg_match('/^[A-Za-z0-9_]+$/', $database)) {
 // Comentario: Construir DSN administrativo sin seleccionar base aún.
 $adminDsn = "mysql:host={$host};port={$port};charset=utf8mb4";
 
-// Comentario: Crear conexión administrativa con excepciones.
-$adminConnection = new PDO($adminDsn, $user, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+// Comentario: Crear conexión administrativa con excepciones sin exponer credenciales ante fallos de infraestructura.
+try {
+    // Comentario: Inicializar PDO administrativo contra el servicio MySQL efímero.
+    $adminConnection = new PDO($adminDsn, $user, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+} catch (PDOException $exception) {
+    // Comentario: Informar fallo de conexión sin imprimir DSN, usuario ni contraseña.
+    fwrite(STDERR, 'No se pudo conectar a MySQL de integración: ' . $exception->getCode() . PHP_EOL);
+
+    // Comentario: Salir con error controlado para CI o ejecución local.
+    exit(1);
+}
 
 // Comentario: Recrear base temporal para partir siempre de cero.
 $adminConnection->exec('DROP DATABASE IF EXISTS `' . $database . '`');
@@ -66,14 +75,14 @@ executeSqlFile($adminConnection, __DIR__ . '/../../server/sql/seed_demo_preview.
 // Comentario: Cargar bootstrap después de preparar entorno y base.
 require_once __DIR__ . '/../../server/app/bootstrap.php';
 
+// Comentario: Iniciar sesión antes de imprimir resultados para evitar avisos de cabeceras en CLI.
+AuthService::startSession();
+
 // Comentario: Obtener conexión desde la capa real del backend.
 $connection = Database::tryConnection();
 
 // Comentario: Verificar que el backend conecta contra MySQL real.
 assert_true($connection instanceof PDO, 'Database::tryConnection devuelve PDO con MySQL efímero.');
-
-// Comentario: Validar login demo contra usuario importado del seed.
-AuthService::startSession();
 
 // Comentario: Ejecutar login real con hash del seed demo.
 $loggedUser = AuthService::login($connection, 'demo_admin', 'DemoAdmin2026!NoProductiva');

@@ -33,11 +33,11 @@ final class AuthService
     // Comentario: Intentar login contra la tabla users usando password_hash/password_verify.
     public static function login(PDO $connection, string $userOrEmail, string $password): ?array
     {
-        // Comentario: Preparar consulta por usuario o email activo.
-        $statement = $connection->prepare("SELECT users.id, users.name, users.email, users.username, users.password_hash, users.status, roles.code AS role_code FROM users INNER JOIN roles ON roles.id = users.role_id WHERE (users.username = :login OR users.email = :login) AND users.status = 'activo' LIMIT 1");
+        // Comentario: Preparar consulta por usuario o email activo usando placeholders únicos compatibles con prepares nativos.
+        $statement = $connection->prepare("SELECT users.id, users.name, users.email, users.username, users.password_hash, users.status, roles.code AS role_code FROM users INNER JOIN roles ON roles.id = users.role_id WHERE (users.username = :username_login OR users.email = :email_login) AND users.status = 'activo' LIMIT 1");
 
-        // Comentario: Ejecutar consulta parametrizada.
-        $statement->execute(['login' => $userOrEmail]);
+        // Comentario: Ejecutar consulta con un valor ligado por cada placeholder declarado.
+        $statement->execute(['username_login' => $userOrEmail, 'email_login' => $userOrEmail]);
 
         // Comentario: Obtener usuario si existe.
         $user = $statement->fetch();
