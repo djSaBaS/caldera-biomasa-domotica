@@ -10,3 +10,5 @@ Esquema SQL y migraciones.
 - Documentar cambios relevantes.
 - No guardar credenciales reales.
 - Mantener coherencia con la documentación de `docs/`.
+
+- `seed_demo_preview.sql`: datos ficticios idempotentes para previsualizar panel, telemetría, eventos, combustible y mantenimiento en modo demo.

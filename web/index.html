@@ -1,18 +1,130 @@
 <!doctype html>
 <html lang="es">
   <head>
+    <!-- Comentario: Definir codificación UTF-8 para textos en español. -->
     <meta charset="utf-8">
+    <!-- Comentario: Activar comportamiento responsive mobile-first. -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Comentario: Definir título del panel domótico. -->
     <title>Caldera Biomasa Domótica</title>
+    <!-- Comentario: Cargar Bootstrap 5 desde CDN para evitar dependencias locales pesadas. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Comentario: Cargar iconos Bootstrap para navegación técnica ligera. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Comentario: Cargar estilos propios mínimos del proyecto. -->
     <link rel="stylesheet" href="assets/css/app.css">
   </head>
   <body>
-    <main class="layout">
-      <section class="card">
-        <h1>Caldera Biomasa Domótica</h1>
-        <p>Panel inicial del proyecto. La funcionalidad se implementará por fases.</p>
-      </section>
-    </main>
+    <!-- Comentario: Crear barra superior fija para móvil y escritorio. -->
+    <nav class="navbar navbar-dark bg-panel border-bottom border-secondary sticky-top">
+      <div class="container-fluid">
+        <!-- Comentario: Botón que abre el menú lateral en móvil. -->
+        <button class="btn btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuLateral" aria-controls="menuLateral" aria-label="Abrir menú">
+          <i class="bi bi-list"></i>
+        </button>
+        <!-- Comentario: Mostrar nombre del sistema en la barra superior. -->
+        <span class="navbar-brand mb-0 h1">Caldera Biomasa</span>
+        <!-- Comentario: Mostrar indicador de modo seguro visible. -->
+        <span class="badge text-bg-warning">Simulación segura</span>
+      </div>
+    </nav>
+
+    <!-- Comentario: Contenedor principal con sidebar en escritorio y contenido flexible. -->
+    <div class="app-shell">
+      <!-- Comentario: Menú lateral offcanvas reutilizable en móvil. -->
+      <aside class="offcanvas-lg offcanvas-start sidebar bg-panel" tabindex="-1" id="menuLateral" aria-labelledby="menuLateralTitulo">
+        <div class="offcanvas-header border-bottom border-secondary">
+          <!-- Comentario: Título accesible del menú lateral. -->
+          <h2 class="offcanvas-title h5" id="menuLateralTitulo">Menú</h2>
+          <!-- Comentario: Cierre del menú en móvil. -->
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#menuLateral" aria-label="Cerrar"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column p-3">
+          <!-- Comentario: Lista de navegación entre secciones simuladas. -->
+          <nav class="nav nav-pills flex-column gap-2" aria-label="Navegación principal">
+            <a class="nav-link active" href="#dashboard" data-section="dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+            <a class="nav-link" href="#estado" data-section="estado"><i class="bi bi-activity me-2"></i>Estado actual</a>
+            <a class="nav-link" href="#usuarios" data-section="usuarios"><i class="bi bi-people me-2"></i>Usuarios</a>
+            <a class="nav-link" href="#programacion" data-section="programacion"><i class="bi bi-calendar-week me-2"></i>Programación</a>
+            <a class="nav-link" href="#configuracion" data-section="configuracion"><i class="bi bi-sliders me-2"></i>Configuración</a>
+            <a class="nav-link" href="#logs" data-section="logs"><i class="bi bi-journal-text me-2"></i>Logs</a>
+            <a class="nav-link" href="#combustible" data-section="combustible"><i class="bi bi-fuel-pump me-2"></i>Combustible</a>
+            <a class="nav-link" href="#mantenimiento" data-section="mantenimiento"><i class="bi bi-tools me-2"></i>Mantenimiento</a>
+            <a class="nav-link" href="#notificaciones" data-section="notificaciones"><i class="bi bi-bell me-2"></i>Notificaciones</a>
+            <a class="nav-link" href="#ajustes" data-section="ajustes"><i class="bi bi-gear me-2"></i>Ajustes</a>
+          </nav>
+          <!-- Comentario: Aviso permanente sobre limitaciones de seguridad. -->
+          <div class="alert alert-warning mt-4 small" role="alert">No activar cargas reales. Panel con datos simulados.</div>
+        </div>
+      </aside>
+
+      <!-- Comentario: Contenido principal mobile-first. -->
+      <main class="content p-3 p-md-4">
+        <!-- Comentario: Pantalla de login preparada para integración real PHP. -->
+        <section class="login-card mb-4" aria-labelledby="loginTitulo">
+          <div class="card bg-card border-secondary shadow-sm">
+            <div class="card-body">
+              <h1 class="h4" id="loginTitulo">Acceso al panel</h1>
+              <p class="text-secondary-emphasis">Formulario preparado para autenticación PHP real con sesiones y contraseñas hasheadas.</p>
+              <form class="row g-3" id="formLogin" novalidate>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="usuario">Usuario</label>
+                  <input class="form-control form-control-lg" id="usuario" name="usuario" autocomplete="username" placeholder="usuario" required>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="contrasena">Contraseña</label>
+                  <input class="form-control form-control-lg" id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••" required>
+                </div>
+                <div class="col-12 col-md-4 d-grid align-items-end">
+                  <button class="btn btn-warning btn-lg" type="submit">Entrar</button>
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-link link-warning p-0" id="btnRestablecer" type="button">Restablecer contraseña</button>
+                </div>
+              </form>
+              <div class="alert alert-secondary mt-3 mb-0 d-none" id="loginResultado" role="status"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Comentario: Sección Dashboard con KPIs y gráficas principales. -->
+        <section class="app-section" id="dashboard" data-section-panel="dashboard">
+          <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+            <div>
+              <h2 class="h3 mb-1">Dashboard</h2>
+              <p class="text-secondary-emphasis mb-0">Vista inicial de operación con telemetría simulada.</p>
+            </div>
+            <div class="text-md-end"><button class="btn btn-outline-warning btn-lg" id="btnActualizarDashboard" type="button"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar</button><div class="small text-secondary-emphasis mt-2" id="dashboardEstadoApi" role="status">Datos demo pendientes de sincronizar.</div></div>
+          </div>
+          <div class="row g-3 mb-4" id="kpiGrid"></div>
+          <div class="row g-3">
+            <div class="col-12 col-xl-6"><div class="card bg-card border-secondary"><div class="card-body"><h3 class="h5">Temperatura agua por horas</h3><canvas id="graficaAgua" height="160"></canvas></div></div></div>
+            <div class="col-12 col-xl-6"><div class="card bg-card border-secondary"><div class="card-body"><h3 class="h5">Temperatura humos</h3><canvas id="graficaHumos" height="160"></canvas></div></div></div>
+            <div class="col-12 col-xl-6"><div class="card bg-card border-secondary"><div class="card-body"><h3 class="h5">Consumo diario</h3><canvas id="graficaConsumo" height="160"></canvas></div></div></div>
+            <div class="col-12 col-xl-6"><div class="card bg-card border-secondary"><div class="card-body"><h3 class="h5">Coste mensual acumulado</h3><canvas id="graficaCoste" height="160"></canvas></div></div></div>
+            <div class="col-12 col-xl-6"><div class="card bg-card border-secondary"><div class="card-body"><h3 class="h5">Comparativa anual</h3><canvas id="graficaAnual" height="160"></canvas></div></div></div>
+            <div class="col-12 col-xl-6"><div class="card bg-card border-secondary"><div class="card-body"><h3 class="h5">Estados del día</h3><canvas id="graficaEstados" height="160"></canvas></div></div></div>
+          </div>
+        </section>
+
+        <!-- Comentario: Secciones secundarias renderizadas con tarjetas reutilizables. -->
+        <section class="app-section d-none" id="estado" data-section-panel="estado"></section>
+        <section class="app-section d-none" id="usuarios" data-section-panel="usuarios"></section>
+        <section class="app-section d-none" id="programacion" data-section-panel="programacion"></section>
+        <section class="app-section d-none" id="configuracion" data-section-panel="configuracion"></section>
+        <section class="app-section d-none" id="logs" data-section-panel="logs"></section>
+        <section class="app-section d-none" id="combustible" data-section-panel="combustible"></section>
+        <section class="app-section d-none" id="mantenimiento" data-section-panel="mantenimiento"></section>
+        <section class="app-section d-none" id="notificaciones" data-section-panel="notificaciones"></section>
+        <section class="app-section d-none" id="ajustes" data-section-panel="ajustes"></section>
+      </main>
+    </div>
+
+    <!-- Comentario: Cargar Bootstrap JavaScript para offcanvas y componentes responsive. -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Comentario: Cargar Chart.js para gráficas iniciales. -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Comentario: Cargar lógica propia del panel. -->
     <script src="assets/js/app.js"></script>
   </body>
 </html>
