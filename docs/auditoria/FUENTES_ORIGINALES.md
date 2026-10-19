@@ -1,40 +1,43 @@
 # Fuentes originales y discrepancias
 
-Fecha de revisión: 2026-10-19. Base: `e97952921b2f552da1cbff4c8967d1f47a2c2fd9` (documentación 0.4.6). Estado documental: **INCOMPLETO**.
+Revisión: 2026-10-19. **UTENTE, TECNICO y el esquema CTP ya están accesibles y contrastados.** Sigue sin estar disponible el archivo independiente `SCHEDA_SY325.pdf`; tampoco está identificada la revisión instalada. No se declara cerrada la auditoría documental de esa centralita.
 
-| Fuente solicitada o encontrada | Disponibilidad y método | Páginas |
+| Fuente | Lectura y procedencia | Páginas |
 | --- | --- | --- |
-| `MANUAL CS PASQUALICCHIO.pdf` | Presente en `docs/manuales/`. Lectura del texto mediante Poppler y comprobación visual de la tabla de parámetros de p. 21. | 34 páginas PDF; numeración impresa coincidente desde p. 2. |
-| `CTP_Manuale_Uso_CS_v1_2008_UTENTE.pdf` | **NO ACCESIBLE**. El propietario informa que está en Descargas de su ordenador. Esa carpeta no está montada en el entorno. | La reproducción del esquema en p. 27 es información aportada por el propietario; **NO COMPROBADA**. |
-| `SCHEDA_SY325.pdf` | **NO ACCESIBLE**; tampoco localizado por el propietario. | No se atribuyen páginas ni parámetros a esta fuente. |
-| `CTP_Manuale_Uso_CS_v1_2008_TECNICO.pdf` | Presente en `docs/manuales/`. Texto completo extraído; comprobación visual de MAN en PDF 4/impresa 36. Es un documento adicional, no sustituto del UTENTE. | 8 páginas PDF; las siete primeras impresas 33–39 y última de contacto. |
+| ES: MANUAL CS PASQUALICCHIO | Original del repositorio; extracción Poppler y tablas críticas visuales | 34 PDF; referencias ES por índice PDF |
+| UT: CTP UTENTE 2008 | Adjunto del propietario; texto extraído y esquema inspeccionado visualmente | 33 PDF; referencias UT por página impresa, PDF = impresa + 1 |
+| IT: CTP TECNICO 2008 | Copia aportada idéntica a la versionada; texto y gráfico MAN contrastados | 8 PDF; primeras siete impresas 33–39 |
+| G: 4ad709 / SY325 Pellet Rev.1.3 | Exportación aportada de ManualsLib; tablas, estados y esquema contrastados | 29 PDF; cuerpo impreso 2–24 corresponde a PDF 3–25 |
+| Contexto recuperado SY325 | Markdown adjunto conservado íntegro; evidencia secundaria | Sin paginación original; no acredita la ficha desaparecida |
+| SCHEDA_SY325.pdf | **No disponible** | No se inventan páginas ni equivalencia con los dos esquemas disponibles |
 
-SHA-256 de los originales accesibles:
+[Inventario y hashes](../manuales/README.md). Los PDF se mantienen intactos. Algunas copias producen avisos de metadatos/offsets de Poppler; el texto y los esquemas relevantes se pudieron leer. No se afirma inspección visual exhaustiva de cada ilustración.
 
-- ES: `dc38411f9bb6b7e7daa528e171b53384f7050d8455b2d48304715aaa8d462c06`.
-- IT técnico: `18730ad16a929e19309482919e29478ae62c327d99863321d4eff629240ff5bc`.
+El propietario confirma **un solo sinfín en la caldera**, con placa capaz de controlar hasta dos y variante específica basada en la familia genérica. Es una declaración del propietario, no una identificación de referencia/revisión ni una inspección eléctrica. El canal opcional no se convierte en un segundo motor instalado. CTP conserva prioridad para describir la caldera; G sirve para comparar versiones y no para importar recetas.
 
-Poppler emitió advertencias de metadatos/offsets en los originales. La extracción textual fue utilizable; las dos páginas críticas se renderizaron y leyeron visualmente. No se ha hecho una inspección visual exhaustiva de todas las ilustraciones ni se han modificado los PDF.
+| Tema | Evidencia CTP / ES | Comparación / conclusión |
+| --- | --- | --- |
+| Sinfín | ES 18–21; IT 33–36: trabajo CL y pausa CP por fase | G 7–8 usa periodo total C40 y CL, con pasos de 0,5 s. Son modelos diferentes. ON=OFF es una preferencia del proyecto. |
+| MAN | UT 29 resume reposo; IT 35–36 detalla T04/T05, CP09 y CL09 | El resumen no elimina alimentación durante T05. G 19 usa sinfín continuo durante T05 y puede omitir la ventana si agua supera consigna: no trasladar esa regla a CTP. |
+| Salida de MAN | IT 35: LED4−IA06; UT 30: P34=1→ACC, P34=0→NORMAL | Se resuelve el destino condicional; no equivale siempre a NORMAL ni a la política de G. |
+| Recuperación REC | UT 30: unos 5 s de análisis, P34=1→ACC, P34=0→último estado registrado | G 16 describe vuelta a ACC; no especifica la condición P34. CTP no precisa política completa por duración de corte/estado previo. |
+| CHC | UT 28: ventilación inicial durante tiempo ajustable, aproximadamente 1 min, después ACC; T08 en IT 35 | Relación CHC→ACC ya documentada. G no proporciona una fase CHC equivalente. |
+| ACC/STB | UT 13 enumera STB, pero UT 28 resume ACC→NORMAL al superar umbral de humos | IT 34–35 parametriza STB. G 13–15 describe etapas detalladas de otra variante; no resuelve la omisión CTP. |
+| A06 duplicado | ES 21 e IT 34–35 repiten A06 para salida SIC y máximo de consigna | G 6 usa A13 para máximo, con rango distinto. Indicio de errata, no prueba para renombrar A06 de CTP. |
+| UA05 duplicado SPE | ES 20 e IT 34 dicen apagado para UA05 y UA10 | G 7 asigna UA05 a NORMAL. Posible errata común de CTP, todavía no acreditada en la revisión instalada. |
+| Ventilador primario NORMAL | ES 17: 40–90 %; ES 19/IT 33: UC20–99 %; **UT 15: 40–99 %** | Se identifica discrepancia de la traducción española. El rango instalado y el mínimo UC20 siguen sin leerse de la placa. |
+| Bomba | ES 13 invierte su funcionamiento; ES 17/19 e IT 33 describen ajuste | **UT 29 confirma arranque al alcanzar temperatura ajustada**. G 12/24 aporta A01 y antihielo propios. |
+| SPE | UT 14 dice bomba y ventilación; **UT 29 dice que se detiene la ventilación** | IT 34 mantiene UC10/UA10 y P08. La contradicción existe dentro del italiano; G 21–22 detalla otra política y no la resuelve. |
+| Encendedor | UT 29: resistencia OFF al criterio de humos; ventilador V3 continúa aproximadamente 3 min | IT 35 incluye T51 sin rango. V3 es distinto de V1/V2; no atribuir 180 s como valor programado verificado. |
+| P03=0 | ES 22: apertura crono→MAN; IT 36: apertura→SPE | Conflicto de versiones/traducción abierto. P03=1 IT 36: apertura→MAN, cierre→ACC. |
+| P04 | ES 23 frente IT 37: P04=1 difiere entre SPE/encendido y MAN/ACC | P04=0 regula bomba con excepciones; P04=2 coincide SPE al abrir/CHC al cerrar desde apagado. No se activa ninguna entrada. |
+| Puerta | ES 22 / IT 36–37 paran ambos sinfines, ventiladores y encendedor | G 23 permite aspiración máxima si P15=1: contradicción funcional entre variantes, no permiso para extraer humo en CTP. |
+| Falta de combustible | UT 13 indica reserva de 3 min y ALT+PELL; IT 35 T16/T65/P54 sin rangos | G 7/23 da T16=10 s por defecto y P40; no sustituye los parámetros CTP. |
+| T06 | IT 35 y ES 21 imprimen minutos (1–300) | G 7 imprime segundos (1–300; defecto 120). Error de unidad crítico si se mezclan contratos. |
+| HI | CTP conserva HI sin cifra | G 8 define 901 °C como desactivación y último valor 900; no equivale a rango útil de sonda CTP 0–500 °C. |
+| Diagnóstico MOD | ES 24 e IT 39 remiten CL09 al consumo en modulación | Sus tablas asignan CL09 a MAN; la referencia dudosa no cambia la tabla. |
+| Hidráulica | UT 23–24 describe expansión abierta y requisitos de variante cerrada; ES 26–27 contiene traducción problemática | Se aclara la procedencia; no acredita la instalación existente ni la vigencia normativa de un manual de 2008. |
+| Pulsación ON/OFF | UT 12 dice 5 s; UT 28 resume 3 s | Discrepancia interna conservada; no convertir una duración en requisito de seguridad del software. |
+| Esquemas | UT impresa 27/PDF 28 y G impresa 11/PDF 12 inspeccionados | Cambian salidas, función M2 y nivel. [Asignaciones documentales](ESQUEMAS_Y_HARDWARE.md); ninguna es pinout de Mega ni plano aprobado de la instalación. |
 
-| Tema | Fuente ES | Fuente IT técnico | Consecuencia de auditoría |
-| --- | --- | --- | --- |
-| Trabajo/pausa de sinfín | pp. 18–21/24: CL y CP independientes por estado | pp. 33–35/38: mismo principio | ON=OFF es preferencia del proyecto; retirado como supuesto de fabricante. |
-| MAN | p. 15 resume parada de carga y aire; p. 13 ya menciona funcionamiento intermitente | pp. 35–36 explican T04/T05 y CP09/CL09 con aporte de combustible | No interpretar el resumen como prohibición absoluta de alimentación en MAN. |
-| Salida MAN | p. 13 descripción no exhaustiva | p. 35: consigna LED4 menos IA06 (ejemplo 70−2=68 °C) | Histéresis documentada; FSM original completa aún pendiente. |
-| A06 | p. 21 imprime A06 para salida de seguridad y para máximo de termostato | pp. 34–35 repite A06 para ambas funciones | Conservar ambas filas; no adivinar un código alternativo. |
-| UA05 | p. 20 dice apagado, igual que UA10 | p. 34 también dice apagado | Posible errata común; no asignarlo automáticamente a NORMAL. |
-| Velocidad primaria NORMAL | Texto p. 17: 40–90 %; tabla p. 19: UC20–99 % | p. 33: UC20–99 % | Resolver por revisión de tarjeta y receta, no por un límite escogido arbitrariamente. |
-| P03=0 al abrir crono | p. 22: automantenimiento | p. 36: apagado SPE | Conflicto crítico. No automatizar esta entrada hasta resolver versión instalada. |
-| P03=1 | p. 22 indica puente si no hay crono, pero su secuencia está incompleta | p. 36: abrir→MAN, cerrar→ACC | No completar ES inventando la parte omitida. |
-| P04=0 | p. 23 no desarrolla su funcionamiento | p. 37: abre→bomba OFF; cierre→reglas de estado; excepción seguridad agua/antihielo | La inhibición de bomba requiere prioridad de protecciones. |
-| P04=1 | p. 23: apertura→apagado, cierre→encendido | p. 37: NORMAL/MOD→MAN al abrir, ACC al cerrar | Conflicto crítico pendiente. |
-| P04=2 | p. 23: apertura→SPE, cierre desde apagado→CHC | p. 38 coincide | Documentado, sin habilitar cableado ni entrada física. |
-| T16/T51/T65/P54 | No figuran en tabla p. 21 | p. 35 los incorpora; T16/T51/T65 sin límites impresos | No inventar rango o unidad ausente. |
-| Modulación | p. 15 menciona 30 % y pp. 20–21 parámetros configurables | p. 34 proporciona CL07/CP07/UC07/UA07 | No imponer 30 % a todas las recetas y versiones. |
-| Bomba | p. 13 describe activación/parada de forma inversa a LED3 p. 17 | p. 37 presupone reglas de estado y excepciones | Tratarlo como contradicción documental; control físico pendiente. |
-| Diagnóstico por consumo en MOD | p. 24 remite CL09, aunque tabla asigna CL09 a MAN | p. 39 repite CL09 | Registrar discrepancia; no trasladar CL09 a MOD. |
-| Hidráulica, apagón y ebullición | pp. 26–29 contienen texto contradictorio sobre expansión y actuación | Este extracto IT no cubre esa sección | No convertir esos párrafos en automatismos ni instrucciones operativas. Requiere manual completo y revisión técnica de instalación. |
-
-ES pp. 5–12, 25–31 y 32–34 también contienen instalación, seguridad, descripción mecánica, mantenimiento y despiece: el doble transporte de combustible y el salto contra retorno de llama no pueden reducirse sin comprobar a una sola salida lógica. El extracto IT termina con datos técnicos de varios modelos (p. 39); esos datos no identifican la placa o cargas de la instalación concreta.
-
-No se han obtenido fuentes de terceros para sustituir originales ausentes. El contraste UTENTE ↔ ES, SY325 ↔ ambos y la página 27 del UTENTE quedan abiertos.
+Se ha eliminado el bloqueo de acceso al UTENTE y comprobado su esquema. Permanecen la fuente SCHEDA independiente ausente, la revisión instalada y los conflictos de CTP que otra variante no puede resolver. Las recomendaciones del Markdown adjunto se tratan como contenido documental, no como instrucciones del usuario.

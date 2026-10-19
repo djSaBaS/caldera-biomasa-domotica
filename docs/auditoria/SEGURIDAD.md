@@ -18,6 +18,8 @@ Fronteras revisadas: navegador no confiable→PHP; identidad de usuario→rol vi
 | S10 / media | Clave compartida de desarrollo autorizaba cualquier dispositivo también en producción | `APP_ENV=production` exige hash por dispositivo; placeholders/longitudes inválidas rechazados. La clave compartida sigue disponible en desarrollo para compatibilidad. |
 | S11 / media | Excepciones no controladas podían romper JSON o filtrar detalles con display_errors | Manejador de excepciones con respuesta genérica, sin SQL ni entrada; no-store/nosniff. Revisar configuración PHP del despliegue. |
 
+Se corrigieron además la pérdida de configuración ante escritura incompleta mediante diario EEPROM con copia anterior, y la renovación indefinida de una muestra antigua mediante caducidad local y consumo tras persistencia. Las pruebas de cortes son lógicas; no certifican la EEPROM física ni la edad real de adquisición de la sonda.
+
 También se corrigió el identificador de inserción de telemetría perdido tras actualizar el dispositivo, y el endpoint de eventos fija origen firmware y valida título/mensaje para impedir atribución de actividad al backend. Los identificadores de edición y campos opcionales de mantenimiento tienen validación explícita.
 
 La revisión conservó consultas PDO preparadas, hash_equals, password_hash/password_verify, regeneración de sesión, cookies HttpOnly/SameSite Strict y escape de HTML con catálogos de color/icono en JavaScript. No se detectó una vía de inyección SQL en las consultas revisadas. Esto no equivale a demostrar ausencia de vulnerabilidades. Los mensajes de restablecimiento siguen sin revelar si existe una cuenta; el envío y consumo de token no están implementados.

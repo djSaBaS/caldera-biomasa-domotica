@@ -41,5 +41,8 @@ php tests/firmware/validate_connection_diagrams.php
 # Comentario: Ejecutar parsers y sketch Mega reales sobre E/S simulada con sanitizadores.
 tests/firmware/run_native_tests.sh
 
+# Comentario: Detectar cambios en los originales conservados frente al inventario de auditoría.
+python3 tests/docs/check_manual_integrity.py
+
 # Comentario: Comprobar espacios finales y problemas básicos del diff de Git.
 git diff --check

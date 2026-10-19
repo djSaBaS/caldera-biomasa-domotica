@@ -8,9 +8,9 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 **Versión:** `0.4.7-auditoria-tecnica`
 **Fecha:** 2026-10-19
-**Estado:** auditoría técnica **INCOMPLETA** y revisión en rama independiente. Hay correcciones y pruebas automatizadas; faltan UTENTE/SY325, guardas completas de la máquina original y validación física. **No avanzar al bloque 2.**
+**Estado:** auditoría técnica **INCOMPLETA** y revisión en rama independiente. Hay correcciones y pruebas automatizadas; UTENTE y su esquema ya se han contrastado; faltan la ficha SCHEDA independiente, revisión instalada, guardas completas y validación física. **No avanzar al bloque 2.**
 
-El [informe de aceptación](docs/auditoria/BLOQUE_1.md) distingue PASA, FALLA y NO COMPROBADO. Se han contrastado el manual Pasqualicchio y el CTP **TECNICO**; este último no sustituye al **UTENTE** solicitado. Véanse [fuentes y discrepancias](docs/auditoria/FUENTES_ORIGINALES.md), [65 parámetros con páginas](docs/auditoria/PARAMETROS_ORIGINALES.md), [matriz de estados](docs/auditoria/MAQUINA_ESTADOS.md) y [resultados de pruebas](docs/auditoria/PRUEBAS.md).
+El [informe de aceptación](docs/auditoria/BLOQUE_1.md) distingue PASA, FALLA y NO COMPROBADO. Se han contrastado Pasqualicchio, CTP **UTENTE/TECNICO** y la variante genérica **SY325 Pellet Rev.1.3**. Los [documentos aportados se conservan íntegros](docs/manuales/README.md), con procedencia y SHA-256. El propietario confirma un sinfín instalado y placa con capacidad para dos; no se aplican a CTP las reglas C40/MAN ni los bornes de la variante genérica. Véanse [fuentes y discrepancias](docs/auditoria/FUENTES_ORIGINALES.md), [65 parámetros con páginas](docs/auditoria/PARAMETROS_ORIGINALES.md), [matriz de estados](docs/auditoria/MAQUINA_ESTADOS.md), [diferencias de variante](docs/auditoria/VARIANTE_SY325_PELLET.md) y [resultados de pruebas](docs/auditoria/PRUEBAS.md).
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 

@@ -3,6 +3,8 @@
 
 // Comentario: Compartir parser y temporización portable con las regresiones.
 #include "ControlModel.h"
+// Comentario: Conservar una copia anterior válida durante cualquier escritura de configuración.
+#include "ConfigJournal.h"
 
 // Comentario: Definir versión del firmware Arduino Mega para trazabilidad con backend y telemetría.
 const char* FIRMWARE_VERSION = "0.4.7-auditoria-tecnica";
@@ -238,13 +240,23 @@ BoilerConfig defaultConfig()
 // Comentario: Cargar configuración desde EEPROM con fallback seguro.
 void loadConfigFromEeprom()
 {
+  // Comentario: Priorizar el diario con dos ranuras antes de migrar layouts legados.
+  uint32_t values[CONFIG_FIELD_COUNT];
+  uint32_t generation = 0;
+  uint8_t slot = 0;
+  if (journalLoad(EEPROM, values, generation, slot)) {
+    activeConfig = configFromValues(values);
+    configSource = "eeprom_journal";
+    return;
+  }
+
   // Comentario: Leer estructura completa desde EEPROM.
   EEPROM.get(CONFIG_EEPROM_ADDRESS, activeConfig);
 
   // Comentario: Validar firma, esquema, checksum y rangos antes de aplicar.
   if (isConfigValid(activeConfig)) {
     // Comentario: Marcar origen persistido para telemetría.
-    configSource = "eeprom";
+    configSource = persistConfig(activeConfig) ? "eeprom_v2_migrated" : "eeprom_v2_readonly";
 
     // Comentario: Salir usando la última configuración válida.
     return;
@@ -252,8 +264,7 @@ void loadConfigFromEeprom()
 
   // Comentario: Intentar migración del esquema anterior antes de recurrir a valores de simulación.
   if (migrateLegacyConfig()) {
-    configSource = "eeprom_migrated";
-    persistConfig(activeConfig);
+    configSource = persistConfig(activeConfig) ? "eeprom_migrated" : "eeprom_v1_readonly";
     return;
   }
 
@@ -264,7 +275,7 @@ void loadConfigFromEeprom()
   configSource = "defaults";
 
   // Comentario: Persistir defaults para próximos arranques autónomos.
-  persistConfig(activeConfig);
+  if (!persistConfig(activeConfig)) { configSource = "defaults_unpersisted"; }
 }
 
 // Comentario: Migrar EEPROM v1 comprobando su checksum con el algoritmo original.
@@ -290,10 +301,12 @@ bool migrateLegacyConfig()
 }
 
 // Comentario: Persistir configuración válida en EEPROM.
-void persistConfig(BoilerConfig config)
+bool persistConfig(BoilerConfig config)
 {
-  // Comentario: Escribir estructura completa en dirección controlada.
-  EEPROM.put(CONFIG_EEPROM_ADDRESS, config);
+  // Comentario: Serializar campos lógicos en la ranura inactiva, conservando dirección cero para migración.
+  uint32_t values[CONFIG_FIELD_COUNT];
+  configToValues(config, values);
+  return journalStore(EEPROM, values);
 }
 
 // Comentario: Validar estructura de configuración antes de usarla.
@@ -474,13 +487,19 @@ void applyRemoteConfig(const String& payload)
   }
   // Comentario: No desgastar EEPROM al recibir de nuevo una configuración ya aplicada.
   if (memcmp(values, currentValues, sizeof(values)) == 0) {
-    sendConfigAck(true, "configuracion_ya_aplicada");
+    const bool stored = persistConfig(activeConfig);
+    sendConfigAck(stored, stored ? "configuracion_ya_aplicada" : "persistencia_no_verificada");
     return;
   }
   // Comentario: Aplicar y persistir únicamente un candidato completamente validado.
-  activeConfig = configFromValues(values);
+  const BoilerConfig candidate = configFromValues(values);
+  if (!persistConfig(candidate)) {
+    sendConfigAck(false, "persistencia_no_verificada");
+    return;
+  }
+  // Comentario: Activar en RAM solo después de verificar la copia durable del candidato.
+  activeConfig = candidate;
   configSource = "remote_cached";
-  persistConfig(activeConfig);
   sendConfigAck(true, "configuracion_aplicada_y_cacheada");
 }
 

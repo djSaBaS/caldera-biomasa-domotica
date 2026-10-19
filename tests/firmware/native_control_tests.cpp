@@ -1,5 +1,7 @@
 // Comentario: Ejecutar el mismo parser y modelo temporal que utilizan Mega y ESP32.
 #include "ConfigJson.h"
+// Comentario: Verificar la misma política de entrega que utiliza el puente ESP32.
+#include "TelemetryFreshness.h"
 // Comentario: Leer el fixture exportado por PHP sin dependencias del hardware.
 #include <fstream>
 // Comentario: Informar resultados de las comprobaciones conductuales.
@@ -24,6 +26,18 @@ int main(int argc, char** argv)
     // Comentario: Exigir el fixture creado por el backend real.
     if (argc != 2) { return 2; }
     try {
+        // Comentario: Una desconexión UART no debe renovar indefinidamente una muestra almacenada.
+        TelemetryFreshness freshness;
+        check(!freshness.ready(0) && !freshness.everReceived(), "No hay muestra antes de recibir UART");
+        freshness.received(100);
+        check(freshness.ready(15100) && !freshness.ready(15101), "Caducar después de quince segundos inclusive");
+        check(!freshness.ready(100), "Una muestra vencida no debe resucitar tras otro rollover");
+        freshness.received(UINT32_MAX - 99);
+        check(freshness.ready(100) && !freshness.ready(15000), "Conservar caducidad durante rollover");
+        freshness.delivered();
+        check(!freshness.ready(101) && freshness.everReceived(), "No reenviar muestra ya persistida ni volver a demo");
+        freshness.received(200);
+        check(freshness.ready(200), "Una nueva recepción debe habilitar otra entrega");
         // Comentario: Deserializar una configuración válida con ON y OFF diferentes.
         std::ifstream input(argv[1]);
         std::string response((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());

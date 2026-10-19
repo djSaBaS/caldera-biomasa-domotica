@@ -21,3 +21,8 @@ ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$CALDERA_NATIVE_DIR/control" "$C
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -I firmware/common -I tests/firmware/stubs tests/firmware/native_mega_tests.cpp -o "$CALDERA_NATIVE_DIR/mega"
 # Comentario: Ejecutar seguridad, recepción de tramas, persistencia y migración sobre el sketch real.
 ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$CALDERA_NATIVE_DIR/mega"
+
+# Comentario: Inyectar cortes y corrupción contra el diario EEPROM real, sin duplicar su implementación.
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -I firmware/common tests/firmware/native_storage_tests.cpp -o "$CALDERA_NATIVE_DIR/storage"
+# Comentario: Comprobar cada frontera de escritura y ambos slots bajo ASan y UBSan.
+ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$CALDERA_NATIVE_DIR/storage"

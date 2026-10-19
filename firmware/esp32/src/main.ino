@@ -6,6 +6,8 @@
 
 // Comentario: Validar estructura JSON y límites compartidos antes de enviar configuración.
 #include "ConfigJson.h"
+// Comentario: Impedir que una muestra antigua se publique repetidamente como reciente.
+#include "TelemetryFreshness.h"
 
 // Comentario: Definir versión del firmware ESP32 para trazabilidad con backend.
 const char* FIRMWARE_VERSION = "0.4.7-auditoria-tecnica";
@@ -26,7 +28,7 @@ const char* WIFI_SSID = "TU_WIFI_AQUI";
 const char* WIFI_PASSWORD = "TU_PASSWORD_AQUI";
 
 // Comentario: Usar URL local de desarrollo como ejemplo no productivo.
-const char* API_BASE_URL = "http://192.168.1.100/server/api";
+const char* API_BASE_URL = "http://192.168.1.100/api";
 
 // Comentario: Usar placeholder documental que el backend rechazará hasta configurar una clave local real.
 const char* DEVICE_API_KEY = "REEMPLAZAR_POR_UNA_CLAVE_LARGA_ALEATORIA";
@@ -60,6 +62,11 @@ unsigned long lastConfigMillis = 0;
 
 // Comentario: Guardar última telemetría recibida desde Arduino.
 String lastArduinoPayload = "";
+// Comentario: Controlar caducidad y entrega de la única muestra pendiente.
+TelemetryFreshness telemetryFreshness;
+// Comentario: Espaciar reintentos de ACK para evitar un POST en cada iteración ante un error.
+unsigned long lastAckAttemptMillis = 0;
+bool ackAttempted = false;
 
 // Comentario: Guardar último ACK recibido desde Arduino para backend.
 String lastConfigAckPayload = "";
@@ -100,6 +107,9 @@ void loop()
 
   // Comentario: Leer telemetría y ACK enviados por Arduino Mega.
   readFromArduino();
+
+  // Comentario: Renovar el reloj después de recibir para no comparar una muestra con un instante anterior.
+  currentMillis = millis();
 
   // Comentario: Enviar telemetría real o simulada al backend.
   sendTelemetry(currentMillis);
@@ -189,8 +199,15 @@ void processArduinoLine(const String& line)
 {
   // Comentario: Detectar telemetría normal prefijada por Arduino.
   if (line.startsWith("TEL:")) {
-    // Comentario: Guardar JSON de telemetría sin el prefijo interno.
-    lastArduinoPayload = line.substring(4);
+    // Comentario: Validar origen y objeto antes de sustituir la última muestra legítima.
+    const String candidate = line.substring(4);
+    JsonDocument document;
+    if (deserializeJson(document, candidate) || !document.is<JsonObject>() || !document["device_id"].is<const char*>() || strcmp(document["device_id"].as<const char*>(), DEVICE_ID) != 0) {
+      Serial.println("Telemetria UART rechazada por estructura o destino");
+      return;
+    }
+    lastArduinoPayload = candidate;
+    telemetryFreshness.received(static_cast<uint32_t>(millis()));
 
     // Comentario: Registrar recepción para diagnóstico.
     Serial.println("Telemetria Arduino recibida");
@@ -220,10 +237,11 @@ void sendTelemetry(unsigned long currentMillis)
   // Comentario: Actualizar marca temporal de último envío.
   lastTelemetryMillis = currentMillis;
 
-  // Comentario: Preparar payload fallback si Arduino aún no envió datos.
-  if (lastArduinoPayload.length() == 0 && !SIMULATION_MODE) { return; }
-  // Comentario: Usar datos ficticios únicamente en simulación, nunca ante pérdida real de Arduino.
-  String payload = lastArduinoPayload.length() > 0 ? lastArduinoPayload : simulatedPayload();
+  // Comentario: Una muestra vencida o ya entregada no debe renovar su fecha en MySQL.
+  const bool fresh = telemetryFreshness.ready(static_cast<uint32_t>(currentMillis));
+  if (!fresh && (!SIMULATION_MODE || telemetryFreshness.everReceived())) { return; }
+  // Comentario: El ejemplo ficticio solo existe antes de la primera recepción en simulación.
+  String payload = fresh ? lastArduinoPayload : simulatedPayload();
 
   // Comentario: En simulación solo registrar el payload sin tráfico real.
   if (SIMULATION_MODE) {
@@ -239,7 +257,9 @@ void sendTelemetry(unsigned long currentMillis)
   }
 
   // Comentario: Enviar HTTP real al endpoint que persiste en MySQL cuando existe base.
-  postJson("/telemetry.php", payload);
+  const int statusCode = postJson("/telemetry.php", payload);
+  // Comentario: Conservar reintento solo hasta caducidad; HTTP exitoso sin persistencia no consume.
+  if (statusCode >= 200 && statusCode < 300 && lastPostPersisted) { telemetryFreshness.delivered(); }
 }
 
 // Comentario: Consultar configuración remota y comandos remotos.
@@ -295,6 +315,11 @@ void flushConfigAck()
     return;
   }
 
+  // Comentario: Limitar los reintentos a uno cada cinco segundos, incluso si el backend falla rápido.
+  const unsigned long now = millis();
+  if (ackAttempted && now - lastAckAttemptMillis < 5000UL) { return; }
+  lastAckAttemptMillis = now;
+  ackAttempted = true;
   // Comentario: Enviar ACK al endpoint de configuración.
   int statusCode = postJson("/config_ack.php", lastConfigAckPayload);
 

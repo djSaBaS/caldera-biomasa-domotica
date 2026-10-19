@@ -2,7 +2,7 @@
 
 La reconstrucción documental de la base 0.4.7 está **INCOMPLETA**. No está validada para funcionamiento físico.
 
-- [Fuentes disponibles y contradicciones](../auditoria/FUENTES_ORIGINALES.md): Pasqualicchio y CTP TECNICO; UTENTE y SY325 no accesibles.
+- [Fuentes disponibles y contradicciones](../auditoria/FUENTES_ORIGINALES.md): Pasqualicchio, CTP UTENTE/TECNICO y comparación SY325 Pellet; ficha SCHEDA independiente y revisión instalada sin acreditar.
 - [Parámetros originales con función, rango, fase y página](../auditoria/PARAMETROS_ORIGINALES.md).
 - [Matriz de los once estados y transiciones pendientes](../auditoria/MAQUINA_ESTADOS.md), incluyendo REC.
 - [Contrato de simulación implementado](API_CONTRACT.md): diferenciar consignas del proyecto de límites originales.

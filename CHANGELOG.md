@@ -4,7 +4,7 @@
 
 ### Estado
 
-- Bloque 1 **INCOMPLETO**: UTENTE/SY325 inaccesibles, guardas originales y validación física pendientes. Sin avance al bloque 2 ni salidas físicas habilitadas.
+- Bloque 1 **INCOMPLETO**: SCHEDA independiente y revisión instalada pendientes; UTENTE y su esquema ya contrastados; guardas originales y validación física pendientes. Sin avance al bloque 2 ni salidas físicas habilitadas.
 
 ### Corregido
 
@@ -22,6 +22,15 @@
 - Migración SQL versionada, 65 entradas de parámetros con páginas, matriz de once estados, discrepancias, inventario y decisiones actualizadas.
 - Regresiones HTTP/MySQL y de migración; parsers reales y sketch Mega ejecutados con E/S simulada y sanitizadores. CI amplía comprobaciones y fija plataformas/parser.
 
+
+### Ampliación documental y regresiones de esta revisión
+
+- Conservados UTENTE 2008, SY325 Pellet Rev.1.3 (`4ad709.pdf`) y contexto recuperado; TECNICO aportado idéntico al existente. Inventario con procedencia, páginas, SHA-256 y comprobación automática de integridad.
+- Contrastado esquema CTP impreso 27/PDF 28 y diferencias de bornes; un sinfín instalado según propietario. CTP CL/CP y MAN se mantienen separados de C40/MAN continuo de la variante genérica.
+- Aclarados CHC→ACC, MAN según P34, REC y enfriamiento independiente V3; documentadas contradicciones de SPE, A06, UA05, P03/P04 y rangos/unidades.
+- Diario EEPROM CBJ1 de dos ranuras con CRC32, marcador final y lectura de verificación; no activar ni confirmar candidatos que no se persistieron. Migración v1/v2 legado y pruebas de cortes/corrupción/rollover.
+- ESP32 descarta telemetría con más de 15 s desde recepción local y no reenvía una muestra ya persistida. Reintento de ACK limitado a cinco segundos y URL de ejemplo corregida a `/api` bajo raíz pública.
+- Pruebas nativas con 48 comprobaciones de control/protocolo/frescura, 26 del sketch Mega y 1077 de almacenamiento con fallos inyectados; no acreditan hardware ni cierran el bloque.
 
 ## [0.4.6-dashboard-protegido-mysql-ci] - 2026-05-15
 

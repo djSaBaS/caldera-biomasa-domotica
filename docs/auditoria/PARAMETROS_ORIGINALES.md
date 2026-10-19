@@ -1,8 +1,8 @@
 # Parámetros originales: extracción contrastada disponible
 
-Estado: **INCOMPLETO** respecto a las tres fuentes solicitadas. No se ha leído UTENTE ni SY325. La tabla incluye todas las entradas CL, CP, UC, UA, F, A, IA, T y P encontradas en las tablas de los dos PDF accesibles. «IT» significa **TECNICO**, nunca UTENTE. Las páginas ES coinciden con el índice de página PDF; en IT se indican índice PDF y numeración impresa (PDF 1 = impresa 33).
+Estado: **extracción CTP contrastada; identificación instalada incompleta**. Se han leído UTENTE, TECNICO, ES y la variante genérica Pellet. Esta tabla recoge todas las entradas CL, CP, UC, UA, F, A, IA, T y P de las tablas CTP disponibles. «IT» significa TECNICO; «UT», UTENTE con página impresa (PDF = impresa + 1). Las páginas ES coinciden con el índice PDF; en IT PDF 1 = impresa 33. [Los parámetros de SY325 Pellet](VARIANTE_SY325_PELLET.md) se conservan separados porque sus códigos, rangos y unidades no son intercambiables.
 
-Los rangos describen lo que imprimen estas fuentes. No son valores instalados ni recetas recomendadas. Ninguno de los PDF accesibles contiene un volcado verificado de la centralita concreta. HI se conserva literalmente porque no hay un límite numérico contrastado. Los porcentajes 0–100 del simulador no equivalen al rango original hasta 99 ni garantizan una relación lineal tensión/caudal.
+Los rangos describen lo que imprimen estas fuentes. No son valores instalados ni recetas recomendadas. Ninguno de los PDF contiene un volcado verificado de la centralita concreta. El propietario confirma un sinfín instalado; las filas del segundo canal describen capacidad documental, no una segunda carga real. HI se conserva literalmente porque no hay un límite numérico contrastado. Los porcentajes 0–100 del simulador no equivalen al rango original hasta 99 ni garantizan una relación lineal tensión/caudal.
 
 | Código | Función | Rango y unidad originales | Fase o ámbito | Estado de la evidencia | Página de procedencia |
 | --- | --- | --- | --- | --- | --- |
@@ -45,9 +45,9 @@ Los rangos describen lo que imprimen estas fuentes. No son valores instalados ni
 | F24 | Umbral de humos para automantenimiento | 30 °C–HI (HI sin cifra verificada) | MAN | Documentado; sin valor de fábrica | ES 21 / IT PDF 2, impresa 34 |
 | A04 | Termostato de seguridad de agua | 86–95 °C | SIC | Documentado; sin valor de fábrica | ES 21 / IT PDF 2, impresa 34 |
 | A05 | Diferencia de temperatura para modulación | 0–15 °C | NORMAL/MOD | Documentado; sin valor de fábrica | ES 21 / IT PDF 2, impresa 34 |
-| A06 (salida SIC) | Termostato de salida de seguridad | 20–95 °C | SIC | Código A06 duplicado en ambas fuentes; resolver con centralita/SY325 | ES 21 / IT PDF 2, impresa 34 |
+| A06 (salida SIC) | Termostato de salida de seguridad | 20–95 °C | SIC | Código A06 duplicado en ambas fuentes; resolver con revisión instalada; G usa A13 para máximo con otro rango | ES 21 / IT PDF 2, impresa 34 |
 | A12 | Valor mínimo del termostato de caldera | 40–70 °C | Límite de consigna | Documentado; sin valor de fábrica | ES 21 / IT PDF 2, impresa 34 |
-| A06 (máximo) | Valor máximo del termostato de caldera | 70–85 °C | Límite de consigna | Código A06 duplicado en ambas fuentes; resolver con centralita/SY325 | ES 21 / IT PDF 3, impresa 35 |
+| A06 (máximo) | Valor máximo del termostato de caldera | 70–85 °C | Límite de consigna | Código A06 duplicado en ambas fuentes; resolver con revisión instalada; G usa A13 para máximo con otro rango | ES 21 / IT PDF 3, impresa 35 |
 | IA06 | Histéresis del termostato de automantenimiento | 1–10 °C | MAN | Documentado; sin valor de fábrica | ES 21 / IT PDF 3, impresa 35 |
 | T00 | Precalentamiento del encendedor | 0–900 s | ACC | Documentado; sin valor de fábrica | ES 21 / IT PDF 3, impresa 35 |
 | T01 | Primera fase de encendido | 0–300 min | ACC | Documentado; sin valor de fábrica | ES 21 / IT PDF 3, impresa 35 |
@@ -58,8 +58,8 @@ Los rangos describen lo que imprimen estas fuentes. No son valores instalados ni
 | T06 | Duración de preapagado | 1–300 min | Pre-SPE; secuencia pendiente | Documentado; sin valor de fábrica | ES 21 / IT PDF 3, impresa 35 |
 | T08 | Duración de chequeo | 0–900 s | CHC | Documentado; sin valor de fábrica | ES 21 / IT PDF 3, impresa 35 |
 | T09 | Limpieza durante apagado | 0–900 s | SPE | Documentado; sin valor de fábrica | ES 21 / IT PDF 3, impresa 35 |
-| T16 | Tiempo de apagado por falta de pellet | Rango y unidad no indicados en la tabla | Protección combustible | Presente solo en el CTP técnico; incompleto | IT PDF 3, impresa 35 |
-| T51 | Retardo de apagado del ventilador del encendedor | Rango y unidad no indicados en la tabla | No determinable con las fuentes disponibles | Presente solo en el CTP técnico; incompleto | IT PDF 3, impresa 35 |
+| T16 | Tiempo de apagado por falta de pellet | Rango y unidad no indicados en la tabla | Protección combustible | UT describe reserva de 3 min; no acredita rango de T16/T65 | IT PDF 3/35; UT 13/PDF 14 |
+| T51 | Retardo de apagado del ventilador del encendedor V3 | Rango y unidad no indicados en la tabla | Enfriamiento de V3 al parar resistencia | UT describe aproximadamente 3 min; no acredita rango ni ajuste de T51 | IT PDF 3/35; UT 29/PDF 30 |
 | T65 | Retardo del sensor de nivel de pellet | Rango y unidad no indicados en la tabla | Protección combustible | Presente solo en el CTP técnico; incompleto | IT PDF 3, impresa 35 |
 | P02 | Número de intentos de encendido | 1–5 | ACC/reintentos | Documentado; no inferir ajuste instalado | ES 21 / IT PDF 3, impresa 35 |
 | P03 | Funcionamiento del crono | 0–1 | CHC/ACC/MAN/SPE; discrepancia entre fuentes | Discrepancia funcional: consultar FUENTES_ORIGINALES.md | ES 21 / IT PDF 3, impresa 35 |
@@ -77,13 +77,15 @@ El menú de usuario añade parámetros sin código CL/UC explícito en las tabla
 | Identificador original | Función | Rango | Fase | Procedencia y estado |
 | --- | --- | --- | --- | --- |
 | LED1 | Trabajo del sinfín 1 | 0–300 s | NORMAL | ES 19; IT PDF 1/impresa 33. No inventar CL05. |
-| LED2 | Velocidad del ventilador primario | UC20–99 % en tablas; texto ES 17 dice 40–90 % | NORMAL | ES 17/19; IT PDF 1/33. Contradicción de rango pendiente. |
-| LED3 | Activación de bomba por agua | 20–80 °C | Independiente de combustión | ES 17/19; IT PDF 1/33. El párrafo ES 13 invierte su comportamiento; no usarlo para controlar. |
+| LED2 | Velocidad del ventilador primario | UC20–99 % en tablas; UT 15 dice 40–99 % y ES 17 dice 40–90 % | NORMAL | ES 17/19; IT PDF 1/33. Diferencia de traducción documentada; UC20 instalado desconocido. |
+| LED3 | Activación de bomba por agua | 20–80 °C | Independiente de combustión | ES 17/19; IT PDF 1/33. UT 29 confirma activación al alcanzar el umbral; ES 13 invierte su comportamiento. |
 | LED4 | Consigna de automantenimiento | 50–85 °C | Entrada MAN | ES 17/19; IT PDF 1/33 y 3/35. |
 | LED5 | Selección Auto/Manu | Dos modos descritos, sin código numérico verificado | Modo de funcionamiento | ES 17. Manu no es el estado MAN. |
 | LED6 | Receta de combustión | Selector 1–3; texto describe las dos primeras | Todas las fases de cada receta | ES 17–18. No se conocen sus valores de fábrica. |
 | C0 00 / C0 01 | Horas totales / horas NORMAL+MOD | Rango y unidad de contador no detallados (se describen horas) | Diagnóstico | IT PDF 3/35. No parámetros de combustión. |
 
-La relación MAN `T05 = CP09 + CL09` está escrita y dibujada en IT PDF 4/impresa 36. T04 se expresa en minutos; T05, CP09 y CL09 en segundos. La igualdad no significa CL09 = CP09. La configuración del simulador acepta esta ventana para sinfín 1; sinfín 2, recetas y velocidades originales por fase siguen pendientes.
+La relación MAN `T05 = CP09 + CL09` está escrita y dibujada en IT PDF 4/impresa 36. T04 se expresa en minutos; T05, CP09 y CL09 en segundos. La igualdad no significa CL09 = CP09. La configuración del simulador acepta esta ventana para sinfín 1; el canal opcional 2, recetas y velocidades originales por fase no se aplican; solo un sinfín está declarado instalado.
 
-Para cerrar esta extracción: incorporar el UTENTE accesible, revisar su página 27 y anexos de parámetros de la tarjeta, confirmar la revisión y modelo de centralita instalada y contrastar los códigos duplicados. La tabla no demuestra exhaustividad de la familia SY325.
+El UTENTE y su esquema impreso 27/PDF 28 ya se han contrastado. La salida de MAN por descenso del agua se dirige a ACC si P34=1 y a NORMAL si P34=0 (UT 30/PDF 31), con histéresis IA06 en IT 35. El resumen de reposo de UT 29 no sustituye el gráfico de IT 36.
+
+Siguen pendientes la referencia/revisión instalada, su receta y ajustes, la ficha independiente SCHEDA y los códigos duplicados. No se conocen los rangos CTP de T16/T51/T65; las cifras narrativas no los completan. La tabla no demuestra exhaustividad de toda la familia SY325 ni que sus dos canales estén poblados.

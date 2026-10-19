@@ -9,7 +9,7 @@ enum BoilerState : uint8_t;
 BoilerConfig defaultConfig();
 void loadConfigFromEeprom();
 bool migrateLegacyConfig();
-void persistConfig(BoilerConfig);
+bool persistConfig(BoilerConfig);
 bool isConfigValid(BoilerConfig);
 bool areConfigRangesSafe(BoilerConfig);
 void configToValues(const BoilerConfig&, uint32_t*);
@@ -69,6 +69,9 @@ int main() {
         activeConfig = defaultConfig();
         loadConfigFromEeprom();
         check(activeConfig.configVersion == 70000, "Recuperar última configuración válida sin red");
+        // Comentario: Simular pérdida de las dos copias y del legado para probar defaults.
+        EEPROM.bytes[JOURNAL_START + JOURNAL_RECORD_SIZE - 1] = 0;
+        EEPROM.bytes[JOURNAL_START + JOURNAL_SLOT_SIZE + JOURNAL_RECORD_SIZE - 1] = 0;
         EEPROM.bytes[0] ^= 0xFF;
         loadConfigFromEeprom();
         check(activeConfig.configVersion == 1 && isConfigValid(activeConfig), "Corrupción debe recurrir a defaults de simulación");
@@ -76,6 +79,7 @@ int main() {
         LegacyConfigV1 legacy = {CONFIG_MAGIC, 1, 500, 12, 50, 50, 60, 75, 80, 90, 10, 30, 1, 0};
         const uint16_t fields[] = {CONFIG_MAGIC, 1, 500, 12, 50, 50, 60, 75, 80, 90, 10, 30, 1};
         for (uint16_t field : fields) { legacy.checksum = static_cast<uint16_t>(legacy.checksum * 31U + field); }
+        EEPROM.bytes.fill(0xFF);
         EEPROM.put(0, legacy);
         loadConfigFromEeprom();
         check(activeConfig.configVersion == 500 && activeConfig.phaseTiming[0].onSeconds == 12 && activeConfig.maintenanceWorkSeconds == 0, "Migrar EEPROM v1 conservando consignas y corrigiendo MAN");
@@ -91,6 +95,14 @@ int main() {
         Serial1.inject("CFG:" + frameFor(candidate) + "\n");
         readEsp32Messages();
         check(activeConfig.configVersion == 501, "Recuperar recepción después de fin de línea");
+        // Comentario: Rechazar una configuración nueva si EEPROM no conserva la escritura.
+        candidate.configVersion = 502;
+        EEPROM.ignoreWrites = true;
+        Serial1.outgoing.str("");
+        applyRemoteConfig(frameFor(candidate).c_str());
+        check(activeConfig.configVersion == 501, "No activar ni confirmar un candidato que no quedó persistido");
+        check(Serial1.outgoing.str().find("persistencia_no_verificada") != std::string::npos && Serial1.outgoing.str().find("rechazada") != std::string::npos, "Informar ACK negativo por fallo de persistencia");
+        EEPROM.ignoreWrites = false;
         // Comentario: Enclavar alarmas y conservar disipación simulada ante sobretemperatura con sonda válida.
         sensors = {96, 200, 50, true, true, true};
         alarmActive = false;
@@ -123,6 +135,26 @@ int main() {
         applyOutputs(131000);
         check(!outputs.augerActive && outputs.fanPrimaryPct == 0 && outputs.pumpActive, "Fin T05 vuelve a T04");
         check(std::string(stateToText(STATE_REC)) == "REC" && std::string(stateToText(STATE_CHECK)) == "CHC", "Emitir estados canónicos");
+        // Comentario: Migrar el layout v2 ya distribuido sin eliminar su copia en dirección cero.
+        EEPROM.bytes.fill(0xFF);
+        BoilerConfig previousV2 = defaultConfig();
+        previousV2.configVersion = 900;
+        previousV2.checksum = calculateConfigChecksum(previousV2);
+        EEPROM.put(0, previousV2);
+        loadConfigFromEeprom();
+        check(activeConfig.configVersion == 900, "Conservar versión del layout v2 legado");
+        check(std::string(configSource) == "eeprom_v2_migrated", "Trazar migración v2 al diario");
+        // Comentario: Una repetición tampoco debe confirmar durabilidad cuando desaparecieron ambas copias.
+        EEPROM.bytes[JOURNAL_START + JOURNAL_RECORD_SIZE - 1] = 0;
+        EEPROM.bytes[JOURNAL_START + JOURNAL_SLOT_SIZE + JOURNAL_RECORD_SIZE - 1] = 0;
+        EEPROM.ignoreWrites = true;
+        Serial1.outgoing.str("");
+        applyRemoteConfig(frameFor(activeConfig).c_str());
+        check(Serial1.outgoing.str().find("rechazada") != std::string::npos, "No confirmar durabilidad de una repetición sin copia válida");
+        EEPROM.ignoreWrites = false;
+        Serial1.outgoing.str("");
+        applyRemoteConfig(frameFor(activeConfig).c_str());
+        check(Serial1.outgoing.str().find("aplicada") != std::string::npos, "Reparar copia perdida antes de confirmar una repetición");
         std::cout << "Regresiones del sketch Mega: " << checks << " comprobaciones correctas.\n";
     } catch (const std::exception& error) {
         std::cerr << "FALLO: " << error.what() << '\n';

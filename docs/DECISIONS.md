@@ -52,7 +52,7 @@ Consecuencia: el mecanismo es suficiente para desarrollo y banco de pruebas, per
 
 ## 0011 — Auditoría documental abierta
 
-Se mantiene el bloque 1 incompleto hasta acceder al UTENTE y contrastar SY325 o su reproducción verificada, resolver contradicciones y completar las guardas originales. El extracto TECNICO es fuente adicional, no sustituto. No se avanza al bloque 2. Los documentos de sprints anteriores son históricos.
+UTENTE y su esquema impreso 27/PDF 28 ya están contrastados. Se mantiene el bloque 1 incompleto hasta acreditar la revisión instalada/ficha independiente, resolver contradicciones y completar las guardas originales. TECNICO y SY325 Pellet son fuentes adicionales con límites diferentes. No se avanza al bloque 2. Los documentos de sprints anteriores son históricos.
 
 ## 0012 — Simulación obligatoria y comandos sin ejecución
 
@@ -65,3 +65,15 @@ Se mantienen nombres legados y se añaden pares por fase con unidades explícita
 ## 0014 — Permisos vigentes y raíz pública limitada
 
 Revalidar rol/estado de sesión en MySQL permite revocar accesos. La clave compartida es exclusiva de desarrollo; producción exige hash por dispositivo. Solo se publica server/public mediante router; no se expone app/sql/storage/.env. Perdida de verificación de sesión o de limitador falla cerrado.
+
+## 0015 — Conservar fuentes y separar variantes
+
+Se guardan íntegros los documentos aportados por petición del propietario, con procedencia, paginación y SHA-256. El contexto recuperado es evidencia secundaria y sus recomendaciones no son instrucciones de ejecución. El propietario confirma un sinfín instalado y capacidad de dos en la placa. CTP CL/CP, MAN y bornes se mantienen separados del programa genérico Pellet C40; un código semejante no acredita unidades, guardas ni cableado equivalentes.
+
+## 0016 — Diario EEPROM con copia anterior
+
+La actualización escribe la ranura inactiva CBJ1 y marca el registro válido al final, con CRC32 y lectura de verificación. La configuración nueva solo se activa y confirma después de persistirla. Se conserva el área legada para migración v1/v2 y no se escriben repeticiones ya durables. Las pruebas inyectan cortes/corrupción en cada frontera; el ensayo eléctrico real sigue pendiente. CRC32 detecta corrupción accidental, no autentica una modificación maliciosa de EEPROM.
+
+## 0017 — Edad local de muestra y reintentos acotados
+
+ESP32 admite una muestra pendiente hasta quince segundos desde UART y la consume al confirmar persistencia; el vencimiento es definitivo y no vuelve a generar demo tras haber recibido Mega. Este límite pertenece al proyecto y no representa la edad de adquisición del sensor. Los intentos de ACK se espacian cinco segundos. Secuencia/idempotencia durable y alarmas de enlace requieren diseño posterior; la red de operación permanece bloqueada.
