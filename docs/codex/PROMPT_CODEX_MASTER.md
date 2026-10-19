@@ -1,3 +1,5 @@
+> Documento histórico de planificación. El bloque 1 se rige por `docs/auditoria/BLOQUE_1.md` y no se considera un sprint.
+
 # Prompt maestro para Codex
 
 Actúa como arquitecto senior full stack y experto en sistemas embebidos aplicados a automatización segura.
@@ -12,7 +14,7 @@ Vas a trabajar sobre un monorepo para domotizar y monitorizar una caldera de bio
 - Seguridad siempre tiene prioridad sobre rendimiento, comodidad o automatización.
 - El sistema original de la caldera debe poder mantenerse como respaldo.
 - El sinfín de combustible trabaja por ciclos temporizados.
-- El tiempo ON del sinfín debe ser igual al tiempo OFF.
+- ON=OFF es una preferencia del proyecto; conservar tiempos independientes por fase y la ventana MAN T04/T05, según la auditoría del bloque 1.
 - Los parámetros de sinfín deben ser configurables pero validados.
 - No uses `delay()` en firmware crítico salvo pruebas explícitas de banco.
 - Usa lógica no bloqueante basada en `millis()`.

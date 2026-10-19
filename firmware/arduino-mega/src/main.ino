@@ -1,11 +1,17 @@
 // Comentario: Incluir EEPROM para conservar la última configuración segura sin internet.
 #include <EEPROM.h>
 
+// Comentario: Compartir parser y temporización portable con las regresiones.
+#include "ControlModel.h"
+
 // Comentario: Definir versión del firmware Arduino Mega para trazabilidad con backend y telemetría.
-const char* FIRMWARE_VERSION = "0.4.3-offline-config";
+const char* FIRMWARE_VERSION = "0.4.7-auditoria-tecnica";
 
 // Comentario: Mantener siempre activado el modo simulación hasta validar en banco con cargas seguras.
 const bool SIMULATION_MODE = true;
+
+// Comentario: Impedir compilación para cargas físicas antes de cerrar la auditoría funcional.
+static_assert(SIMULATION_MODE, "Auditoria pendiente: solo simulacion");
 
 // Comentario: Definir identificador lógico compartido con backend y ESP32.
 const char* DEVICE_ID = "caldera-01";
@@ -20,23 +26,24 @@ const unsigned long ESP_LINK_BAUD = 115200;
 const unsigned long LOOP_INTERVAL_MS = 100;
 
 // Comentario: Definir tamaño máximo de línea recibida desde ESP32 para proteger RAM.
-const unsigned int ESP_LINE_MAX_LENGTH = 220;
+const unsigned int ESP_LINE_MAX_LENGTH = 512;
 
 // Comentario: Definir firma persistente para validar contenido EEPROM propio del proyecto.
 const uint16_t CONFIG_MAGIC = 0xCA1D;
 
 // Comentario: Definir versión de estructura EEPROM para invalidar formatos antiguos de forma controlada.
-const uint8_t CONFIG_SCHEMA_VERSION = 1;
+const uint8_t CONFIG_SCHEMA_VERSION = 2;
 
 // Comentario: Definir posición inicial de EEPROM para configuración persistente.
 const int CONFIG_EEPROM_ADDRESS = 0;
 
 // Comentario: Enumerar estados originales que deben respetarse.
-enum BoilerState {
+enum BoilerState : uint8_t {
   STATE_OFF,
   STATE_CHECK,
   STATE_ACC,
   STATE_STB,
+  STATE_REC,
   STATE_NORMAL,
   STATE_MOD,
   STATE_MAN,
@@ -68,6 +75,27 @@ struct OutputState {
 struct BoilerConfig {
   uint16_t magic;
   uint8_t schemaVersion;
+  uint32_t configVersion;
+  uint16_t augerCycleSeconds;
+  uint8_t fanPrimaryPct;
+  uint8_t fanSecondaryPct;
+  uint8_t pumpOnTempC;
+  uint8_t targetTempC;
+  uint8_t maintenanceTempC;
+  uint8_t safetyTempC;
+  uint16_t telemetryIntervalSeconds;
+  uint16_t configPollIntervalSeconds;
+  uint8_t notificationsEnabled;
+  AugerTiming phaseTiming[5];
+  uint16_t maintenancePauseMinutes;
+  uint16_t maintenanceWorkSeconds;
+  uint16_t checksum;
+};
+
+// Comentario: Mantener el layout AVR anterior para migrar EEPROM sin perder consignas válidas.
+struct __attribute__((packed)) LegacyConfigV1 {
+  uint16_t magic;
+  uint8_t schemaVersion;
   uint16_t configVersion;
   uint16_t augerCycleSeconds;
   uint8_t fanPrimaryPct;
@@ -81,6 +109,9 @@ struct BoilerConfig {
   uint8_t notificationsEnabled;
   uint16_t checksum;
 };
+
+// Comentario: Comprobar el layout AVR histórico antes de leer EEPROM de una versión anterior.
+static_assert(sizeof(LegacyConfigV1) == 20, "Layout EEPROM legado incorrecto");
 
 // Comentario: Guardar estado actual de la caldera.
 BoilerState currentState = STATE_OFF;
@@ -101,10 +132,16 @@ unsigned long lastLoopMillis = 0;
 unsigned long lastTelemetryMillis = 0;
 
 // Comentario: Registrar última conmutación del sinfín simulado.
-unsigned long lastAugerToggleMillis = 0;
+unsigned long phaseStartedMillis = 0;
+
+// Comentario: Detectar cambios de fase para reiniciar la pausa y la ventana MAN.
+BoilerState outputPhase = STATE_OFF;
 
 // Comentario: Registrar si existe alarma activa.
 bool alarmActive = false;
+
+// Comentario: Distinguir la versión solicitada de la configuración que sigue activa tras un rechazo.
+uint32_t requestedConfigVersion = 0;
 
 // Comentario: Registrar origen de configuración para diagnóstico local y backend.
 const char* configSource = "defaults";
@@ -168,7 +205,28 @@ void loop()
 BoilerConfig defaultConfig()
 {
   // Comentario: Preparar estructura local con límites conocidos seguros.
-  BoilerConfig config = {CONFIG_MAGIC, CONFIG_SCHEMA_VERSION, 1, 10, 50, 50, 60, 75, 80, 90, 10, 30, 1, 0};
+  BoilerConfig config = {};
+
+  // Comentario: Definir valores del simulador, sin atribuirlos a una receta del fabricante.
+  config.magic = CONFIG_MAGIC;
+  config.schemaVersion = CONFIG_SCHEMA_VERSION;
+  config.configVersion = 1;
+  config.augerCycleSeconds = 10;
+  config.fanPrimaryPct = 50;
+  config.fanSecondaryPct = 50;
+  config.pumpOnTempC = 60;
+  config.targetTempC = 75;
+  config.maintenanceTempC = 80;
+  config.safetyTempC = 90;
+  config.telemetryIntervalSeconds = 10;
+  config.configPollIntervalSeconds = 30;
+  config.notificationsEnabled = 1;
+  // Comentario: Conservar preferencia simétrica en ACC/STB/NORMAL/MOD solamente como valor de proyecto.
+  for (uint8_t i = 0; i < 4; ++i) { config.phaseTiming[i] = {10, 10}; }
+  // Comentario: Mantener deshabilitada la carga MAN hasta configurar su perfil completo.
+  config.phaseTiming[4] = {0, 0};
+  config.maintenancePauseMinutes = 1;
+  config.maintenanceWorkSeconds = 0;
 
   // Comentario: Calcular checksum antes de devolver valores por defecto.
   config.checksum = calculateConfigChecksum(config);
@@ -192,6 +250,13 @@ void loadConfigFromEeprom()
     return;
   }
 
+  // Comentario: Intentar migración del esquema anterior antes de recurrir a valores de simulación.
+  if (migrateLegacyConfig()) {
+    configSource = "eeprom_migrated";
+    persistConfig(activeConfig);
+    return;
+  }
+
   // Comentario: Aplicar valores por defecto si EEPROM está vacía o corrupta.
   activeConfig = defaultConfig();
 
@@ -200,6 +265,28 @@ void loadConfigFromEeprom()
 
   // Comentario: Persistir defaults para próximos arranques autónomos.
   persistConfig(activeConfig);
+}
+
+// Comentario: Migrar EEPROM v1 comprobando su checksum con el algoritmo original.
+bool migrateLegacyConfig()
+{
+  // Comentario: Leer el formato antiguo con los mismos anchos y orden de campos AVR.
+  LegacyConfigV1 previous;
+  EEPROM.get(CONFIG_EEPROM_ADDRESS, previous);
+  if (previous.magic != CONFIG_MAGIC || previous.schemaVersion != 1) { return false; }
+  // Comentario: Reconstruir los campos que participaban en el checksum anterior.
+  const uint16_t fields[] = {previous.magic, previous.schemaVersion, previous.configVersion, previous.augerCycleSeconds, previous.fanPrimaryPct, previous.fanSecondaryPct, previous.pumpOnTempC, previous.targetTempC, previous.maintenanceTempC, previous.safetyTempC, previous.telemetryIntervalSeconds, previous.configPollIntervalSeconds, previous.notificationsEnabled};
+  uint16_t checksum = 0;
+  for (uint8_t i = 0; i < sizeof(fields) / sizeof(fields[0]); ++i) { checksum = mixChecksum(checksum, fields[i]); }
+  if (checksum != previous.checksum) { return false; }
+  // Comentario: Conservar consignas antiguas y expandir explícitamente el perfil simétrico legado.
+  uint32_t values[CONFIG_FIELD_COUNT] = {previous.configVersion, previous.augerCycleSeconds, previous.fanPrimaryPct, previous.fanSecondaryPct, previous.pumpOnTempC, previous.targetTempC, previous.maintenanceTempC, previous.safetyTempC, previous.telemetryIntervalSeconds, previous.configPollIntervalSeconds, previous.notificationsEnabled};
+  for (uint8_t i = 11; i < 19; ++i) { values[i] = previous.augerCycleSeconds; }
+  // Comentario: No trasladar la alimentación continua MAN errónea del simulador anterior.
+  values[21] = 1;
+  if (!validConfigValues(values)) { return false; }
+  activeConfig = configFromValues(values);
+  return true;
 }
 
 // Comentario: Persistir configuración válida en EEPROM.
@@ -234,106 +321,67 @@ bool isConfigValid(BoilerConfig config)
 // Comentario: Validar rangos funcionales compatibles con backend y seguridad local.
 bool areConfigRangesSafe(BoilerConfig config)
 {
-  // Comentario: Rechazar ciclo de sinfín fuera de límites documentados.
-  if (config.augerCycleSeconds < 2 || config.augerCycleSeconds > 120) {
-    return false;
-  }
-
-  // Comentario: Rechazar ventilador primario fuera de porcentaje válido.
-  if (config.fanPrimaryPct > 100) {
-    return false;
-  }
-
-  // Comentario: Rechazar ventilador secundario fuera de porcentaje válido.
-  if (config.fanSecondaryPct > 100) {
-    return false;
-  }
-
-  // Comentario: Rechazar activación de bomba fuera de rango térmico prudente.
-  if (config.pumpOnTempC < 35 || config.pumpOnTempC > 75) {
-    return false;
-  }
-
-  // Comentario: Rechazar objetivo fuera del rango operativo esperado.
-  if (config.targetTempC < 55 || config.targetTempC > 85) {
-    return false;
-  }
-
-  // Comentario: Rechazar mantenimiento fuera de rango operativo esperado.
-  if (config.maintenanceTempC < 60 || config.maintenanceTempC > 88) {
-    return false;
-  }
-
-  // Comentario: Rechazar seguridad fuera de rango o por debajo del objetivo.
-  if (config.safetyTempC < 75 || config.safetyTempC > 95 || config.safetyTempC < config.targetTempC) {
-    return false;
-  }
-
-  // Comentario: Rechazar telemetría demasiado frecuente o demasiado lenta.
-  if (config.telemetryIntervalSeconds < 5 || config.telemetryIntervalSeconds > 300) {
-    return false;
-  }
-
-  // Comentario: Rechazar valor de notificaciones fuera de booleano normalizado.
-  if (config.notificationsEnabled > 1) {
-    return false;
-  }
-
-  // Comentario: Rechazar consulta de configuración fuera del rango documentado.
-  if (config.configPollIntervalSeconds < 10 || config.configPollIntervalSeconds > 600) {
-    return false;
-  }
-
-  // Comentario: Aceptar configuración tras superar todas las reglas.
-  return true;
+  // Comentario: Comparar los valores anchos con los mismos límites del parser UART.
+  uint32_t values[CONFIG_FIELD_COUNT];
+  configToValues(config, values);
+  return config.configVersion > 0 && validConfigValues(values);
 }
 
-// Comentario: Calcular checksum simple con campos explícitos para evitar padding de estructura.
+// Comentario: Convertir la estructura persistida a campos del contrato sin depender de padding.
+void configToValues(const BoilerConfig& config, uint32_t* values)
+{
+  // Comentario: Escribir los once campos básicos en el orden del catálogo compartido.
+  const uint32_t basic[] = {config.configVersion, config.augerCycleSeconds, config.fanPrimaryPct, config.fanSecondaryPct, config.pumpOnTempC, config.targetTempC, config.maintenanceTempC, config.safetyTempC, config.telemetryIntervalSeconds, config.configPollIntervalSeconds, config.notificationsEnabled};
+  memcpy(values, basic, sizeof(basic));
+  // Comentario: Incorporar pares independientes de carga y pausa para cada fase.
+  for (uint8_t i = 0; i < 5; ++i) {
+    values[11 + i * 2] = config.phaseTiming[i].onSeconds;
+    values[12 + i * 2] = config.phaseTiming[i].offSeconds;
+  }
+  // Comentario: Conservar las unidades originales de la ventana MAN.
+  values[21] = config.maintenancePauseMinutes;
+  values[22] = config.maintenanceWorkSeconds;
+}
+
+// Comentario: Construir la estructura solo con valores ya comprobados en 32 bits.
+BoilerConfig configFromValues(const uint32_t* values)
+{
+  // Comentario: Inicializar toda la estructura para que no queden bytes sin definir.
+  BoilerConfig config = {};
+  config.magic = CONFIG_MAGIC;
+  config.schemaVersion = CONFIG_SCHEMA_VERSION;
+  config.configVersion = values[0];
+  config.augerCycleSeconds = values[1];
+  config.fanPrimaryPct = values[2];
+  config.fanSecondaryPct = values[3];
+  config.pumpOnTempC = values[4];
+  config.targetTempC = values[5];
+  config.maintenanceTempC = values[6];
+  config.safetyTempC = values[7];
+  config.telemetryIntervalSeconds = values[8];
+  config.configPollIntervalSeconds = values[9];
+  config.notificationsEnabled = values[10];
+  // Comentario: Materializar los perfiles por fase después de validar sus límites.
+  for (uint8_t i = 0; i < 5; ++i) { config.phaseTiming[i] = {static_cast<uint16_t>(values[11 + i * 2]), static_cast<uint16_t>(values[12 + i * 2])}; }
+  config.maintenancePauseMinutes = values[21];
+  config.maintenanceWorkSeconds = values[22];
+  // Comentario: Sellar la estructura lógica que se persistirá.
+  config.checksum = calculateConfigChecksum(config);
+  return config;
+}
+
+// Comentario: Calcular integridad accidental sobre campos explícitos, incluidos los 32 bits de versión.
 uint16_t calculateConfigChecksum(BoilerConfig config)
 {
-  // Comentario: Inicializar acumulador no criptográfico suficiente para corrupción accidental.
-  uint16_t checksum = 0;
-
-  // Comentario: Incorporar firma de configuración.
-  checksum = mixChecksum(checksum, config.magic);
-
-  // Comentario: Incorporar versión de esquema.
-  checksum = mixChecksum(checksum, config.schemaVersion);
-
-  // Comentario: Incorporar versión de configuración.
-  checksum = mixChecksum(checksum, config.configVersion);
-
-  // Comentario: Incorporar ciclo de sinfín.
-  checksum = mixChecksum(checksum, config.augerCycleSeconds);
-
-  // Comentario: Incorporar ventilador primario.
-  checksum = mixChecksum(checksum, config.fanPrimaryPct);
-
-  // Comentario: Incorporar ventilador secundario.
-  checksum = mixChecksum(checksum, config.fanSecondaryPct);
-
-  // Comentario: Incorporar temperatura de bomba.
-  checksum = mixChecksum(checksum, config.pumpOnTempC);
-
-  // Comentario: Incorporar temperatura objetivo.
-  checksum = mixChecksum(checksum, config.targetTempC);
-
-  // Comentario: Incorporar temperatura de mantenimiento.
-  checksum = mixChecksum(checksum, config.maintenanceTempC);
-
-  // Comentario: Incorporar temperatura de seguridad.
-  checksum = mixChecksum(checksum, config.safetyTempC);
-
-  // Comentario: Incorporar intervalo de telemetría.
-  checksum = mixChecksum(checksum, config.telemetryIntervalSeconds);
-
-  // Comentario: Incorporar intervalo de consulta.
-  checksum = mixChecksum(checksum, config.configPollIntervalSeconds);
-
-  // Comentario: Incorporar bandera de notificaciones.
-  checksum = mixChecksum(checksum, config.notificationsEnabled);
-
-  // Comentario: Devolver checksum calculado.
+  // Comentario: Introducir firma y versión de esquema antes de los valores operativos.
+  uint16_t checksum = mixChecksum(config.magic, config.schemaVersion);
+  uint32_t values[CONFIG_FIELD_COUNT];
+  configToValues(config, values);
+  // Comentario: Mezclar las dos mitades de cada campo sin depender de la arquitectura.
+  for (uint8_t i = 0; i < CONFIG_FIELD_COUNT; ++i) {
+    checksum = mixChecksum(checksum, static_cast<uint16_t>(values[i]));
+    checksum = mixChecksum(checksum, static_cast<uint16_t>(values[i] >> 16));
+  }
   return checksum;
 }
 
@@ -350,12 +398,19 @@ void readEsp32Messages()
   // Comentario: Mantener búfer estático para reconstruir líneas completas.
   static String buffer = "";
 
+  // Comentario: Descartar hasta fin de línea después de cualquier desbordamiento.
+  static bool discarding = false;
+
   // Comentario: Procesar todos los caracteres disponibles del enlace ESP32.
   while (EspLink.available() > 0) {
     // Comentario: Leer un carácter disponible.
     char character = static_cast<char>(EspLink.read());
 
     // Comentario: Procesar línea cuando llega salto de línea.
+    if (discarding) {
+      if (character == '\n') { discarding = false; }
+      continue;
+    }
     if (character == '\n') {
       // Comentario: Normalizar espacios residuales.
       buffer.trim();
@@ -373,7 +428,10 @@ void readEsp32Messages()
     } else {
       // Comentario: Descartar línea excesiva para proteger memoria.
       buffer = "";
+      discarding = true;
 
+      // Comentario: La línea descartada no contiene una versión candidata verificable.
+      requestedConfigVersion = 0;
       // Comentario: Enviar ACK negativo por tamaño anómalo.
       sendConfigAck(false, "linea_configuracion_demasiado_larga");
     }
@@ -398,108 +456,32 @@ void processEsp32Line(const String& line)
 // Comentario: Aplicar configuración recibida desde backend vía ESP32.
 void applyRemoteConfig(const String& payload)
 {
-  // Comentario: Copiar configuración actual para mantener atomicidad ante errores.
-  BoilerConfig candidate = activeConfig;
-
-  // Comentario: Aplicar firma esperada al candidato.
-  candidate.magic = CONFIG_MAGIC;
-
-  // Comentario: Aplicar versión de esquema esperada al candidato.
-  candidate.schemaVersion = CONFIG_SCHEMA_VERSION;
-
-  // Comentario: Leer versión de configuración remota.
-  candidate.configVersion = static_cast<uint16_t>(readUnsignedValue(payload, "version", activeConfig.configVersion));
-
-  // Comentario: Leer ciclo de sinfín remoto.
-  candidate.augerCycleSeconds = static_cast<uint16_t>(readUnsignedValue(payload, "auger", activeConfig.augerCycleSeconds));
-
-  // Comentario: Leer ventilador primario remoto.
-  candidate.fanPrimaryPct = static_cast<uint8_t>(readUnsignedValue(payload, "fan1", activeConfig.fanPrimaryPct));
-
-  // Comentario: Leer ventilador secundario remoto.
-  candidate.fanSecondaryPct = static_cast<uint8_t>(readUnsignedValue(payload, "fan2", activeConfig.fanSecondaryPct));
-
-  // Comentario: Leer temperatura de bomba remota.
-  candidate.pumpOnTempC = static_cast<uint8_t>(readUnsignedValue(payload, "pump", activeConfig.pumpOnTempC));
-
-  // Comentario: Leer temperatura objetivo remota.
-  candidate.targetTempC = static_cast<uint8_t>(readUnsignedValue(payload, "target", activeConfig.targetTempC));
-
-  // Comentario: Leer temperatura de mantenimiento remota.
-  candidate.maintenanceTempC = static_cast<uint8_t>(readUnsignedValue(payload, "maintenance", activeConfig.maintenanceTempC));
-
-  // Comentario: Leer temperatura de seguridad remota.
-  candidate.safetyTempC = static_cast<uint8_t>(readUnsignedValue(payload, "safety", activeConfig.safetyTempC));
-
-  // Comentario: Leer intervalo de telemetría remoto.
-  candidate.telemetryIntervalSeconds = static_cast<uint16_t>(readUnsignedValue(payload, "telemetry", activeConfig.telemetryIntervalSeconds));
-
-  // Comentario: Leer intervalo de consulta remota.
-  candidate.configPollIntervalSeconds = static_cast<uint16_t>(readUnsignedValue(payload, "poll", activeConfig.configPollIntervalSeconds));
-
-  // Comentario: Leer activación de notificaciones remota.
-  candidate.notificationsEnabled = static_cast<uint8_t>(readUnsignedValue(payload, "notifications", activeConfig.notificationsEnabled));
-
-  // Comentario: Recalcular checksum del candidato antes de validarlo.
-  candidate.checksum = calculateConfigChecksum(candidate);
-
-  // Comentario: Rechazar configuración si no supera reglas locales.
-  if (!isConfigValid(candidate)) {
-    sendConfigAck(false, "configuracion_fuera_de_rango");
+  // Comentario: Decodificar una configuración completa en tipos anchos antes de aplicarla.
+  requestedConfigVersion = 0;
+  uint32_t values[CONFIG_FIELD_COUNT];
+  if (!parseConfigPayload(payload.c_str(), values)) {
+    sendConfigAck(false, "configuracion_invalida");
     return;
   }
-
-  // Comentario: Activar configuración validada en memoria.
-  activeConfig = candidate;
-
-  // Comentario: Marcar origen remoto persistido.
+  // Comentario: Registrar el candidato aunque se rechace por antigüedad.
+  requestedConfigVersion = values[0];
+  // Comentario: Impedir retrocesos de versión y versiones reutilizadas con contenido distinto.
+  uint32_t currentValues[CONFIG_FIELD_COUNT];
+  configToValues(activeConfig, currentValues);
+  if (values[0] < activeConfig.configVersion || (values[0] == activeConfig.configVersion && memcmp(values, currentValues, sizeof(values)) != 0)) {
+    sendConfigAck(false, "version_obsoleta_o_reutilizada");
+    return;
+  }
+  // Comentario: No desgastar EEPROM al recibir de nuevo una configuración ya aplicada.
+  if (memcmp(values, currentValues, sizeof(values)) == 0) {
+    sendConfigAck(true, "configuracion_ya_aplicada");
+    return;
+  }
+  // Comentario: Aplicar y persistir únicamente un candidato completamente validado.
+  activeConfig = configFromValues(values);
   configSource = "remote_cached";
-
-  // Comentario: Persistir configuración para funcionamiento sin internet.
   persistConfig(activeConfig);
-
-  // Comentario: Confirmar aplicación correcta al ESP32.
   sendConfigAck(true, "configuracion_aplicada_y_cacheada");
-}
-
-// Comentario: Leer entero sin signo desde payload clave-valor separado por punto y coma.
-unsigned long readUnsignedValue(const String& payload, const char* key, unsigned long fallback)
-{
-  // Comentario: Construir patrón de búsqueda exacto.
-  String pattern = String(key) + "=";
-
-  // Comentario: Buscar patrón dentro del payload.
-  int startIndex = payload.indexOf(pattern);
-
-  // Comentario: Devolver fallback si la clave no existe.
-  if (startIndex < 0) {
-    return fallback;
-  }
-
-  // Comentario: Mover índice al inicio del valor.
-  startIndex += pattern.length();
-
-  // Comentario: Buscar final de valor por separador.
-  int endIndex = payload.indexOf(';', startIndex);
-
-  // Comentario: Usar final de cadena si no hay separador posterior.
-  if (endIndex < 0) {
-    endIndex = payload.length();
-  }
-
-  // Comentario: Extraer valor textual.
-  String value = payload.substring(startIndex, endIndex);
-
-  // Comentario: Normalizar espacios residuales.
-  value.trim();
-
-  // Comentario: Devolver fallback si el valor quedó vacío.
-  if (value.length() == 0) {
-    return fallback;
-  }
-
-  // Comentario: Convertir a entero sin signo usando utilidad Arduino.
-  return static_cast<unsigned long>(value.toInt());
 }
 
 // Comentario: Enviar ACK de configuración al ESP32 para persistir evento en backend.
@@ -521,7 +503,12 @@ void sendConfigAck(bool applied, const char* message)
   EspLink.print("\",\"config_version\":");
 
   // Comentario: Escribir versión como número JSON.
+  EspLink.print(requestedConfigVersion);
+
+  // Comentario: Informar por separado la versión que continúa activa y el alcance parcial del ACK.
+  EspLink.print(",\"active_config_version\":");
   EspLink.print(activeConfig.configVersion);
+  EspLink.print(",\"scope\":\"control_subset\",\"protocol_version\":\"1.1\"");
 
   // Comentario: Añadir mensaje diagnóstico corto.
   EspLink.print(",\"message\":\"");
@@ -539,9 +526,10 @@ const char* stateToText(BoilerState state)
   // Comentario: Seleccionar texto estable para API y logs.
   switch (state) {
     case STATE_OFF: return "OFF";
-    case STATE_CHECK: return "CHECK";
+    case STATE_CHECK: return "CHC";
     case STATE_ACC: return "ACC";
     case STATE_STB: return "STB";
+    case STATE_REC: return "REC";
     case STATE_NORMAL: return "NORMAL";
     case STATE_MOD: return "MOD";
     case STATE_MAN: return "MAN";
@@ -572,7 +560,7 @@ void readSensors(unsigned long currentMillis)
 void evaluateSafety()
 {
   // Comentario: Detectar fallo de sensor crítico.
-  bool sensorFailure = !sensors.criticalSensorOk;
+  bool sensorFailure = !sensors.criticalSensorOk || !isfinite(sensors.waterTempC) || !isfinite(sensors.smokeTempC);
 
   // Comentario: Detectar sobretemperatura usando configuración local cacheada.
   bool overTemperature = sensors.waterTempC >= activeConfig.safetyTempC;
@@ -581,7 +569,7 @@ void evaluateSafety()
   bool safetyChainOpen = !sensors.doorClosed || !sensors.safetyThermostatOk;
 
   // Comentario: Activar alarma si cualquier condición crítica aparece.
-  alarmActive = sensorFailure || overTemperature || safetyChainOpen;
+  alarmActive = alarmActive || sensorFailure || overTemperature || safetyChainOpen;
 
   // Comentario: Pasar a ALT si existe alarma activa.
   if (alarmActive) {
@@ -617,49 +605,49 @@ void runStateMachine(unsigned long currentMillis)
 // Comentario: Aplicar salidas simuladas sin energizar pines físicos.
 void applyOutputs(unsigned long currentMillis)
 {
-  // Comentario: Apagar todo si hay alarma o modo simulación impide salidas reales.
-  if (alarmActive || SIMULATION_MODE) {
-    // Comentario: Mantener bomba simulada si temperatura supera umbral configurado y no hay alarma.
-    outputs.pumpActive = !alarmActive && sensors.waterTempC >= activeConfig.pumpOnTempC;
-
-    // Comentario: Calcular ventilador primario desde configuración activa solo en combustión.
-    outputs.fanPrimaryPct = isCombustionState() ? activeConfig.fanPrimaryPct : 0;
-
-    // Comentario: Calcular ventilador secundario desde configuración activa solo en combustión.
-    outputs.fanSecondaryPct = isCombustionState() ? activeConfig.fanSecondaryPct : 0;
-
-    // Comentario: Mantener bujía simulada únicamente en ACC.
-    outputs.igniterActive = currentState == STATE_ACC && !alarmActive;
-
-    // Comentario: Actualizar sinfín temporizado con configuración activa.
-    updateAugerCycle(currentMillis);
-
-    // Comentario: Salir sin escribir pines físicos.
+  // Comentario: Reiniciar temporización al entrar en otra fase, sin heredar un pulso activo.
+  if (currentState != outputPhase) {
+    phaseStartedMillis = currentMillis;
+    outputPhase = currentState;
+  }
+  // Comentario: Cortar combustión ante alarma sin suprimir automáticamente la disipación de calor.
+  if (alarmActive) {
+    forceOutputsOff();
+    // Comentario: Con sonda válida, representar la bomba de disipación; no se escriben pines.
+    outputs.pumpActive = sensors.criticalSensorOk && isfinite(sensors.waterTempC) && sensors.waterTempC >= activeConfig.pumpOnTempC;
     return;
   }
-
-  // Comentario: En fases futuras se escribirán pines físicos tras validaciones adicionales.
-  forceOutputsOff();
+  // Comentario: Mantener bomba independiente de la ventana de combustible MAN.
+  outputs.pumpActive = sensors.waterTempC >= activeConfig.pumpOnTempC;
+  // Comentario: Limitar MAN a su ventana T05 después de esperar T04 minutos.
+  const bool inWindow = currentState != STATE_MAN || maintenanceWindow(static_cast<uint32_t>(currentMillis - phaseStartedMillis), activeConfig.maintenancePauseMinutes, activeConfig.maintenanceWorkSeconds);
+  // Comentario: Aplicar ventilación simulada únicamente durante fases y ventanas admitidas.
+  outputs.fanPrimaryPct = isCombustionState() && inWindow ? activeConfig.fanPrimaryPct : 0;
+  outputs.fanSecondaryPct = isCombustionState() && inWindow ? activeConfig.fanSecondaryPct : 0;
+  // Comentario: No extender la ignición a MAN ni a otras fases no verificadas.
+  outputs.igniterActive = currentState == STATE_ACC;
+  // Comentario: Evaluar tiempos independientes de carga y pausa sin activar GPIO.
+  updateAugerCycle(currentMillis);
 }
 
-// Comentario: Actualizar ciclo temporizado del sinfín con ON igual a OFF.
+// Comentario: Seleccionar el perfil de sinfín de cada fase sin imponer ON=OFF.
 void updateAugerCycle(unsigned long currentMillis)
 {
-  // Comentario: Desactivar sinfín fuera de estados de combustión o ante alarma.
-  if (!isCombustionState() || alarmActive) {
-    outputs.augerActive = false;
-    lastAugerToggleMillis = currentMillis;
-    return;
+  // Comentario: Mantener alimentación cortada fuera de combustión o con alarma enclavada.
+  outputs.augerActive = false;
+  if (!isCombustionState() || alarmActive) { return; }
+  // Comentario: Resolver el índice estable de ACC, STB, NORMAL, MOD o MAN.
+  const uint8_t index = currentState == STATE_ACC ? 0 : currentState == STATE_STB ? 1 : currentState == STATE_NORMAL ? 2 : currentState == STATE_MOD ? 3 : 4;
+  // Comentario: Usar resta sin signo para tolerar el desbordamiento de millis.
+  uint32_t elapsed = static_cast<uint32_t>(currentMillis - phaseStartedMillis);
+  // Comentario: En MAN, la pausa CP09 pertenece a T05 y no al periodo externo T04.
+  if (currentState == STATE_MAN) {
+    if (!maintenanceWindow(elapsed, activeConfig.maintenancePauseMinutes, activeConfig.maintenanceWorkSeconds)) { return; }
+    const uint32_t pauseMs = static_cast<uint32_t>(activeConfig.maintenancePauseMinutes) * 60000U;
+    elapsed = elapsed % (pauseMs + static_cast<uint32_t>(activeConfig.maintenanceWorkSeconds) * 1000U) - pauseMs;
   }
-
-  // Comentario: Convertir segundos configurados a milisegundos.
-  unsigned long augerCycleMs = static_cast<unsigned long>(activeConfig.augerCycleSeconds) * 1000UL;
-
-  // Comentario: Conmutar sinfín cuando se cumple el periodo configurado.
-  if (currentMillis - lastAugerToggleMillis >= augerCycleMs) {
-    outputs.augerActive = !outputs.augerActive;
-    lastAugerToggleMillis = currentMillis;
-  }
+  // Comentario: Calcular la salida desde el inicio de fase para evitar deriva por bucles tardíos.
+  outputs.augerActive = augerAt(elapsed, activeConfig.phaseTiming[index]);
 }
 
 // Comentario: Determinar si el estado permite combustión simulada.
@@ -787,5 +775,5 @@ void sendStatusToEsp32(unsigned long currentMillis)
   EspLink.print(configSource);
 
   // Comentario: Cerrar JSON y línea.
-  EspLink.println("\"}");
+  EspLink.println("\",\"protocol_version\":\"1.1\"}");
 }

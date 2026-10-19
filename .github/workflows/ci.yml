@@ -1,5 +1,5 @@
 # Comentario: Workflow de integración continua para bloquear cambios inseguros antes de producción.
-name: CI producción
+name: CI desarrollo y auditoría
 
 # Comentario: Ejecutar controles en pull requests y pushes a ramas principales.
 on:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   quality-gate:
     # Comentario: Nombrar el job como puerta de calidad para producción.
-    name: Puerta de calidad PHP, JS, SQL y API
+    name: Calidad PHP, JS, SQL, API y simulación
     # Comentario: Usar Ubuntu mantenido por GitHub para herramientas estándar.
     runs-on: ubuntu-latest
     # Comentario: Levantar MySQL efímero para pruebas de integración reales.
@@ -58,13 +58,13 @@ jobs:
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # Comentario: Instalar Arduino CLI oficial para compilar firmware en CI.
       - name: Preparar Arduino CLI
         uses: arduino/setup-arduino-cli@v2
         with:
-          version: "1.x"
+          version: "1.5.1"
 
       # Comentario: Reutilizar cores Arduino descargados para reducir tiempo de CI.
       - name: Cache Arduino CLI
@@ -74,6 +74,10 @@ jobs:
           key: arduino-cli-${{ runner.os }}-${{ hashFiles('tests/firmware/compile_firmware.sh') }}
           restore-keys: |
             arduino-cli-${{ runner.os }}-
+
+      # Comentario: Instalar el parser JSON fijado que comparten ESP32 y pruebas nativas.
+      - name: Preparar ArduinoJson
+        run: arduino-cli lib install ArduinoJson@7.4.2
 
       # Comentario: Ejecutar lint, pruebas unitarias y validaciones estáticas del repositorio.
       - name: Ejecutar puerta de calidad
@@ -87,7 +91,9 @@ jobs:
           DB_NAME: caldera_biomasa_ci
           DB_USER: root
           DB_PASS: root
-        run: php tests/backend/mysql_integration.php
+        run: |
+          php tests/backend/mysql_integration.php
+          php tests/backend/migration_integration.php
 
       # Comentario: Compilar firmware Arduino Mega y ESP32 con Arduino CLI.
       - name: Compilar firmware Arduino
@@ -103,7 +109,7 @@ jobs:
           DB_PASS: root
           DEVICE_API_KEY: clave-local-pruebas-hardening-no-productiva-123456
         run: |
-          php -S 127.0.0.1:8091 -t server > /tmp/caldera-api.log 2>&1 &
+          php -S 127.0.0.1:8091 -t server/public server/public/router.php > /tmp/caldera-api.log 2>&1 &
           echo $! > /tmp/caldera-api.pid
           sleep 1
 
@@ -119,6 +125,17 @@ jobs:
         env:
           API_BASE_URL: http://127.0.0.1:8091/api
         run: tests/backend/authenticated_http_api.sh
+
+      # Comentario: Comprobar aislamiento de dispositivos, revocación y contrato persistido por HTTP.
+      - name: Regresiones de auditoría
+        env:
+          API_BASE_URL: http://127.0.0.1:8091/api
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: caldera_biomasa_ci
+          DB_USER: root
+          DB_PASS: root
+        run: python3 tests/backend/audit_http_regressions.py
 
       # Comentario: Mostrar log de backend solo si falla alguna prueba HTTP.
       - name: Mostrar log API si falla

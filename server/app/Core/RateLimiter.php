@@ -30,21 +30,21 @@ final class RateLimiter
 
         // Comentario: Salir en modo tolerante si no se puede preparar almacenamiento local.
         if ($path === '') {
-            return;
+            JsonResponse::error('limitador_no_disponible', 'No se puede verificar el límite de peticiones.', 503);
         }
 
         // Comentario: Abrir fichero de contador en modo lectura/escritura con creación automática.
-        $handle = fopen($path, 'c+');
+        $handle = @fopen($path, 'c+');
 
         // Comentario: Salir en modo tolerante si el sistema de ficheros no permite abrir el contador.
         if ($handle === false) {
-            return;
+            JsonResponse::error('limitador_no_disponible', 'No se puede verificar el límite de peticiones.', 503);
         }
 
         // Comentario: Bloquear el fichero para evitar carreras entre peticiones concurrentes.
         if (!flock($handle, LOCK_EX)) {
             fclose($handle);
-            return;
+            JsonResponse::error('limitador_no_disponible', 'No se puede verificar el límite de peticiones.', 503);
         }
 
         // Comentario: Leer estado actual de la ventana de rate limit.
@@ -68,7 +68,10 @@ final class RateLimiter
         $state['attempts']++;
 
         // Comentario: Persistir estado actualizado de forma atómica sobre el mismo fichero.
-        self::writeState($handle, $state);
+        if (!self::writeState($handle, $state)) {
+            self::closeHandle($handle);
+            JsonResponse::error('limitador_no_disponible', 'No se pudo guardar el límite de peticiones.', 503);
+        }
 
         // Comentario: Liberar bloqueo y cerrar recurso de fichero.
         self::closeHandle($handle);
@@ -88,7 +91,7 @@ final class RateLimiter
     private static function pathForKey(string $key): string
     {
         // Comentario: Crear directorio si no existe todavía.
-        if (!is_dir(self::STORAGE_DIRECTORY) && !mkdir(self::STORAGE_DIRECTORY, 0775, true)) {
+        if (!is_dir(self::STORAGE_DIRECTORY) && !@mkdir(self::STORAGE_DIRECTORY, 0700, true) && !is_dir(self::STORAGE_DIRECTORY)) {
             return '';
         }
 
@@ -123,19 +126,12 @@ final class RateLimiter
     }
 
     // Comentario: Escribir estado JSON en el fichero ya bloqueado.
-    private static function writeState($handle, array $state): void
+    private static function writeState($handle, array $state): bool
     {
-        // Comentario: Truncar fichero antes de escribir el nuevo estado.
-        ftruncate($handle, 0);
-
-        // Comentario: Posicionar puntero al inicio tras truncar.
-        rewind($handle);
-
-        // Comentario: Escribir JSON compacto con estado de ventana.
-        fwrite($handle, json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-
-        // Comentario: Forzar volcado para reducir pérdida ante cierre abrupto.
-        fflush($handle);
+        // Comentario: Codificar antes de modificar el contador persistido.
+        $json = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        // Comentario: Comprobar cada operación para no autorizar peticiones con un contador perdido.
+        return ftruncate($handle, 0) && rewind($handle) && fwrite($handle, $json) === strlen($json) && fflush($handle);
     }
 
     // Comentario: Liberar bloqueo y cerrar el recurso de fichero.

@@ -4,11 +4,17 @@
 // Comentario: Incluir cliente HTTP estándar de ESP32.
 #include <HTTPClient.h>
 
+// Comentario: Validar estructura JSON y límites compartidos antes de enviar configuración.
+#include "ConfigJson.h"
+
 // Comentario: Definir versión del firmware ESP32 para trazabilidad con backend.
-const char* FIRMWARE_VERSION = "0.4.3-offline-config";
+const char* FIRMWARE_VERSION = "0.4.7-auditoria-tecnica";
 
 // Comentario: Mantener modo simulación activado hasta validar red y backend en banco.
 const bool SIMULATION_MODE = true;
+
+// Comentario: Bloquear red de operación hasta cerrar las pruebas de seguridad y hardware.
+static_assert(SIMULATION_MODE, "Auditoria pendiente: solo simulacion");
 
 // Comentario: Definir identificador lógico del dispositivo.
 const char* DEVICE_ID = "caldera-01";
@@ -59,10 +65,13 @@ String lastArduinoPayload = "";
 String lastConfigAckPayload = "";
 
 // Comentario: Guardar última versión de configuración entregada al Arduino.
-unsigned long lastConfigVersionSent = 0;
+unsigned long configIntervalMs = CONFIG_INTERVAL_MS;
 
 // Comentario: Guardar estado de conectividad útil para telemetría local.
 bool networkOnline = false;
+
+// Comentario: Distinguir recepción HTTP de persistencia efectiva del último POST.
+bool lastPostPersisted = false;
 
 // Comentario: Inicializar firmware de conectividad.
 void setup()
@@ -137,12 +146,19 @@ void readFromArduino()
   // Comentario: Mantener búfer estático para acumular caracteres entre iteraciones del loop.
   static String buffer = "";
 
+  // Comentario: Descartar la línea completa si supera el límite de transporte.
+  static bool discarding = false;
+
   // Comentario: Procesar caracteres disponibles sin llamadas bloqueantes ni timeout interno.
   while (Serial2.available() > 0) {
     // Comentario: Leer un único carácter disponible en el puerto serie dedicado.
     char character = static_cast<char>(Serial2.read());
 
     // Comentario: Procesar la línea completa cuando llega el salto de línea.
+    if (discarding) {
+      if (character == '\n') { discarding = false; }
+      continue;
+    }
     if (character == '\n') {
       // Comentario: Normalizar espacios y retornos de carro residuales.
       buffer.trim();
@@ -160,6 +176,7 @@ void readFromArduino()
     } else {
       // Comentario: Reiniciar búfer ante línea excesiva para proteger memoria del ESP32.
       buffer = "";
+      discarding = true;
 
       // Comentario: Registrar descarte por tamaño anómalo.
       Serial.println("Linea serial descartada por superar el limite seguro");
@@ -204,6 +221,8 @@ void sendTelemetry(unsigned long currentMillis)
   lastTelemetryMillis = currentMillis;
 
   // Comentario: Preparar payload fallback si Arduino aún no envió datos.
+  if (lastArduinoPayload.length() == 0 && !SIMULATION_MODE) { return; }
+  // Comentario: Usar datos ficticios únicamente en simulación, nunca ante pérdida real de Arduino.
   String payload = lastArduinoPayload.length() > 0 ? lastArduinoPayload : simulatedPayload();
 
   // Comentario: En simulación solo registrar el payload sin tráfico real.
@@ -227,7 +246,7 @@ void sendTelemetry(unsigned long currentMillis)
 void fetchRemoteConfig(unsigned long currentMillis)
 {
   // Comentario: Respetar intervalo de consulta para no saturar backend.
-  if (currentMillis - lastConfigMillis < CONFIG_INTERVAL_MS) {
+  if (currentMillis - lastConfigMillis < configIntervalMs) {
     return;
   }
 
@@ -247,13 +266,12 @@ void fetchRemoteConfig(unsigned long currentMillis)
   }
 
   // Comentario: Consultar configuración real desde backend.
-  String configResponse = getEndpoint(String("/config.php?device_id=") + DEVICE_ID);
+  String configResponse = getEndpoint(String("/config.php?device_id=") + DEVICE_ID + "&view=firmware");
 
   // Comentario: Reenviar configuración al Arduino si la respuesta contiene datos válidos.
   forwardConfigToArduino(configResponse);
 
-  // Comentario: Consultar cola de comandos para trazabilidad futura.
-  getEndpoint(String("/command.php?device_id=") + DEVICE_ID);
+  // Comentario: La ejecución remota carece de contrato ACK; no consumir comandos como si se ejecutasen.
 }
 
 // Comentario: Enviar ACK de configuración pendiente al backend.
@@ -281,7 +299,7 @@ void flushConfigAck()
   int statusCode = postJson("/config_ack.php", lastConfigAckPayload);
 
   // Comentario: Eliminar ACK solo si backend aceptó la recepción.
-  if (statusCode >= 200 && statusCode < 300) {
+  if (statusCode >= 200 && statusCode < 300 && lastPostPersisted) {
     lastConfigAckPayload = "";
   }
 }
@@ -289,125 +307,24 @@ void flushConfigAck()
 // Comentario: Convertir respuesta JSON del backend en trama compacta para Arduino.
 void forwardConfigToArduino(const String& response)
 {
-  // Comentario: Salir si no hay respuesta útil.
-  if (response.length() == 0) {
+  // Comentario: Validar el sobre JSON, destino, origen persistido y todos los campos antes de reenviar.
+  uint32_t values[CONFIG_FIELD_COUNT];
+  if (!decodeConfigResponse(response.c_str(), response.length(), DEVICE_ID, values)) {
+    Serial.println("Configuracion HTTP rechazada");
     return;
   }
-
-  // Comentario: Extraer versión de configuración de la respuesta JSON.
-  unsigned long configVersion = extractUnsignedJsonValue(response, "config_version", 0);
-
-  // Comentario: Rechazar respuestas sin versión válida.
-  if (configVersion == 0) {
-    return;
+  // Comentario: Construir únicamente campos enteros ya validados con las claves del contrato UART.
+  String frame = "CFG:";
+  for (uint8_t i = 0; i < CONFIG_FIELD_COUNT; ++i) {
+    if (i > 0) { frame += ';'; }
+    frame += CONFIG_KEYS[i];
+    frame += '=';
+    frame += String(static_cast<unsigned long>(values[i]));
   }
-
-  // Comentario: Evitar reenviar repetidamente la misma versión al Arduino.
-  if (configVersion == lastConfigVersionSent) {
-    return;
-  }
-
-  // Comentario: Construir trama clave-valor sencilla para reducir parsing en Arduino Mega.
-  String frame = String("CFG:version=") + configVersion;
-
-  // Comentario: Añadir ciclo de sinfín.
-  frame += String(";auger=") + extractUnsignedJsonValue(response, "auger_cycle_seconds", 10);
-
-  // Comentario: Añadir ventilador primario.
-  frame += String(";fan1=") + extractUnsignedJsonValue(response, "fan_primary_pct", 50);
-
-  // Comentario: Añadir ventilador secundario.
-  frame += String(";fan2=") + extractUnsignedJsonValue(response, "fan_secondary_pct", 50);
-
-  // Comentario: Añadir temperatura de activación de bomba.
-  frame += String(";pump=") + extractUnsignedJsonValue(response, "pump_on_temp", 60);
-
-  // Comentario: Añadir temperatura objetivo.
-  frame += String(";target=") + extractUnsignedJsonValue(response, "target_temp", 75);
-
-  // Comentario: Añadir temperatura de mantenimiento.
-  frame += String(";maintenance=") + extractUnsignedJsonValue(response, "maintenance_temp", 80);
-
-  // Comentario: Añadir temperatura de seguridad.
-  frame += String(";safety=") + extractUnsignedJsonValue(response, "safety_temp", 90);
-
-  // Comentario: Añadir intervalo de telemetría.
-  frame += String(";telemetry=") + extractUnsignedJsonValue(response, "telemetry_interval_seconds", 10);
-
-  // Comentario: Añadir intervalo de consulta remota.
-  frame += String(";poll=") + extractUnsignedJsonValue(response, "config_poll_interval_seconds", 30);
-
-  // Comentario: Añadir indicador de notificaciones.
-  frame += String(";notifications=") + extractUnsignedJsonValue(response, "notifications_enabled", 1);
-
-  // Comentario: Enviar trama al Arduino con salto de línea.
+  // Comentario: Reenviar también versiones repetidas para recuperar pérdidas de tramas o reinicios de Mega.
   Serial2.println(frame);
-
-  // Comentario: Guardar versión enviada para evitar duplicados.
-  lastConfigVersionSent = configVersion;
-
-  // Comentario: Registrar envío de configuración.
-  Serial.println("Configuracion remota enviada al Arduino");
-}
-
-// Comentario: Extraer número sin signo desde JSON plano sin dependencia ArduinoJson.
-unsigned long extractUnsignedJsonValue(const String& json, const char* key, unsigned long fallback)
-{
-  // Comentario: Construir patrón de clave JSON.
-  String pattern = String("\"") + key + "\":";
-
-  // Comentario: Buscar clave dentro de respuesta.
-  int startIndex = json.indexOf(pattern);
-
-  // Comentario: Devolver fallback si la clave no existe.
-  if (startIndex < 0) {
-    return fallback;
-  }
-
-  // Comentario: Mover índice al inicio del valor.
-  startIndex += pattern.length();
-
-  // Comentario: Saltar espacios posteriores a los dos puntos.
-  while (startIndex < json.length() && json.charAt(startIndex) == ' ') {
-    startIndex++;
-  }
-
-  // Comentario: Detectar comillas si el backend devuelve decimal como texto en algún entorno.
-  if (startIndex < json.length() && json.charAt(startIndex) == '"') {
-    startIndex++;
-  }
-
-  // Comentario: Inicializar acumulador textual.
-  String value = "";
-
-  // Comentario: Acumular dígitos hasta encontrar separador JSON o decimal.
-  while (startIndex < json.length()) {
-    // Comentario: Leer carácter actual.
-    char character = json.charAt(startIndex);
-
-    // Comentario: Cortar en decimal conservando parte entera para parámetros de firmware.
-    if (character == '.') {
-      break;
-    }
-
-    // Comentario: Acumular únicamente dígitos.
-    if (character >= '0' && character <= '9') {
-      value += character;
-      startIndex++;
-      continue;
-    }
-
-    // Comentario: Finalizar ante cualquier otro separador.
-    break;
-  }
-
-  // Comentario: Devolver fallback si no se extrajo ningún dígito.
-  if (value.length() == 0) {
-    return fallback;
-  }
-
-  // Comentario: Convertir a entero sin signo.
-  return static_cast<unsigned long>(value.toInt());
+  // Comentario: Respetar el intervalo de consulta validado, sin marcar la versión como aplicada.
+  configIntervalMs = values[9] * 1000UL;
 }
 
 // Comentario: Construir payload seguro cuando no hay datos desde Arduino.
@@ -415,6 +332,30 @@ String simulatedPayload()
 {
   // Comentario: Devolver JSON compacto con estado normal simulado.
   return String("{\"device_id\":\"") + DEVICE_ID + "\",\"firmware_esp32\":\"" + FIRMWARE_VERSION + "\",\"simulation\":true,\"state\":\"NORMAL\",\"water_temp\":72.5,\"smoke_temp\":210.0,\"network_online\":false}";
+}
+
+// Comentario: Leer HTTP de forma acotada antes de reservar memoria para un parser JSON.
+String readBoundedHttpBody(HTTPClient& http)
+{
+  // Comentario: Acumular como máximo el límite documentado de la respuesta.
+  String response = "";
+    // Comentario: Leer cuerpo por bloques acotados incluso si no llega Content-Length.
+    WiFiClient* stream = http.getStreamPtr();
+    const unsigned long started = millis();
+    while (http.connected() && millis() - started < 2500UL) {
+      while (stream->available() > 0) {
+        if (response.length() >= HTTP_RESPONSE_MAX_LENGTH) {
+          http.end();
+          return "";
+        }
+        response += static_cast<char>(stream->read());
+      }
+      // Comentario: Terminar al recibir el tamaño declarado sin esperar a cerrar keep-alive.
+      if (http.getSize() >= 0 && response.length() >= static_cast<unsigned int>(http.getSize())) { break; }
+      yield();
+    }
+  // Comentario: Devolver el cuerpo completo o parcial, que deberá validar el parser.
+  return response;
 }
 
 // Comentario: Realizar POST JSON al backend fuera de simulación.
@@ -427,7 +368,11 @@ int postJson(const String& path, const String& payload)
   String url = String(API_BASE_URL) + path;
 
   // Comentario: Inicializar petición HTTP.
+  http.useHTTP10(true);
+  // Comentario: Solicitar cierre de conexión para leer cuerpos acotados sin chunking.
   http.begin(url);
+  // Comentario: Acotar bloqueos de red sin afectar al controlador crítico separado.
+  http.setTimeout(2000);
 
   // Comentario: Declarar contenido JSON.
   http.addHeader("Content-Type", "application/json");
@@ -437,6 +382,16 @@ int postJson(const String& path, const String& payload)
 
   // Comentario: Enviar petición POST y capturar código.
   int statusCode = http.POST(payload);
+
+  // Comentario: No interpretar un 202 con persistencia omitida como confirmación durable.
+  lastPostPersisted = false;
+  if (statusCode >= 200 && statusCode < 300) {
+    const String receipt = readBoundedHttpBody(http);
+    JsonDocument document;
+    if (!deserializeJson(document, receipt, DeserializationOption::NestingLimit(5))) {
+      lastPostPersisted = document["success"].is<bool>() && document["success"].as<bool>() && document["meta"]["persistence"] == "stored";
+    }
+  }
 
   // Comentario: Registrar respuesta HTTP para diagnóstico.
   Serial.print("POST ");
@@ -467,7 +422,11 @@ String getEndpoint(const String& path)
   String url = String(API_BASE_URL) + path;
 
   // Comentario: Inicializar petición HTTP.
+  http.useHTTP10(true);
+  // Comentario: Solicitar cierre de conexión para leer cuerpos acotados sin chunking.
   http.begin(url);
+  // Comentario: Acotar bloqueos de red sin afectar al controlador crítico separado.
+  http.setTimeout(2000);
 
   // Comentario: Añadir API key del dispositivo.
   http.addHeader("X-API-KEY", DEVICE_API_KEY);
@@ -480,7 +439,7 @@ String getEndpoint(const String& path)
 
   // Comentario: Leer cuerpo solo si la respuesta fue satisfactoria.
   if (statusCode >= 200 && statusCode < 300) {
-    response = http.getString();
+    response = readBoundedHttpBody(http);
   }
 
   // Comentario: Descartar respuestas excesivas para proteger memoria.

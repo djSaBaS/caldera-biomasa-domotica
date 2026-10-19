@@ -8,7 +8,7 @@ No se documentan pines de bomba, sinfín, ventiladores, dimmers, relés ni senso
 
 ## Arduino Mega 2560 ↔ ESP32
 
-La conexión real documentada actualmente es el enlace UART entre placas.
+El enlace UART es el único pinout previsto que coincide con el código. La auditoría no ha comprobado físicamente placas, cables, niveles ni fuente.
 
 ![Conexión UART Arduino Mega y ESP32](imagenes/mega_esp32_uart.svg)
 
@@ -52,3 +52,7 @@ No hay pinout real versionado para:
 - cadena de seguridad física.
 
 Hasta que se añada un esquema eléctrico validado, cualquier conexión de 230V o carga real queda fuera de alcance del firmware actual.
+
+## Contraste con centralita original pendiente
+
+El propietario informa de un esquema reproducido en la página 27 del manual italiano UTENTE, aún inaccesible en este entorno. Los números de bornes citados en el CTP técnico (crono 29–30, puerta 31–32, termostato 33–34; pp. 36–38) pertenecen a la centralita descrita por ese manual: **no son pines de Arduino/ESP32 ni un esquema aprobado de adaptación**. No se cablean ni puentean protecciones basándose en esta auditoría. Es necesario identificar revisión de tarjeta, cargas y niveles antes de proponer cualquier adaptación.

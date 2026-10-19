@@ -34,6 +34,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 
 // Comentario: Cargar utilidades comunes de la API sin framework pesado.
 require_once __DIR__ . '/Core/JsonResponse.php';
+// Comentario: Homogeneizar fallos inesperados sin devolver SQL, rutas ni datos de entrada.
+set_exception_handler(static function (Throwable $exception): void {
+    // Comentario: Registrar solo el tipo de fallo para no filtrar credenciales ni payloads.
+    error_log('Fallo interno de API: ' . get_class($exception));
+    // Comentario: Propagar un código de fallo a pruebas y tareas CLI sin revelar detalles sensibles.
+    if (PHP_SAPI === 'cli') {
+        exit(1);
+    }
+    // Comentario: Responder un error genérico y verificable por el cliente.
+    JsonResponse::error('error_interno', 'No se pudo completar la operación.', 500);
+});
 // Comentario: Cargar helper de lectura y validación de peticiones.
 require_once __DIR__ . '/Core/Request.php';
 // Comentario: Cargar helper centralizado de validación de datos.

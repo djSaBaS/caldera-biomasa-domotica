@@ -12,6 +12,16 @@ Request::requireMethod(['GET', 'POST']);
 // Comentario: Detectar método actual para responder de forma separada.
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// Comentario: Proteger los datos del panel con sesión y permisos vigentes.
+AuthorizationService::requireAuthenticatedUser();
+
+// Comentario: Exigir rol operativo y CSRF en escrituras desde el panel.
+if ($method === 'POST') {
+    AuthorizationService::requireAnyRole(['administrador', 'operador', 'mantenimiento']);
+    // Comentario: Impedir modificaciones inducidas mediante una sesión ajena.
+    Csrf::requireValidToken();
+}
+
 // Comentario: Intentar conexión real a MySQL.
 $connection = Database::tryConnection();
 
@@ -35,6 +45,11 @@ if ($method === 'GET') {
     );
 }
 
+// Comentario: No confirmar una escritura que no puede persistirse.
+if (!$connection instanceof PDO) {
+    JsonResponse::error('base_datos_no_disponible', 'La escritura requiere MySQL.', 503);
+}
+
 // Comentario: Leer registro de mantenimiento desde JSON.
 $payload = Request::jsonBody();
 
@@ -51,7 +66,7 @@ $description = Validation::requiredString($payload, 'description', 'La descripci
 $deviceUid = Validation::requiredString($payload, 'device_id', 'El campo device_id es obligatorio.', 80);
 
 // Comentario: Validar coste dentro de límites razonables.
-$cost = is_numeric($payload['cost'] ?? null) ? Validation::decimalRange($payload, 'cost', 0, 100000, 'El coste debe ser válido.') : 0.0;
+$cost = array_key_exists('cost', $payload) ? Validation::decimalRange($payload, 'cost', 0, 100000, 'El coste debe ser válido.') : 0.0;
 
 // Comentario: Persistir mantenimiento si hay base y dispositivo registrado.
 if ($connection instanceof PDO) {
@@ -71,7 +86,7 @@ if ($connection instanceof PDO) {
         'cost' => $cost,
         'replaced_parts' => Validation::optionalString($payload, 'replaced_parts', 1000),
         'technician' => Validation::optionalString($payload, 'technician', 160),
-        'next_review_date' => Validation::optionalString($payload, 'next_review_date', 10),
+        'next_review_date' => isset($payload['next_review_date']) && $payload['next_review_date'] !== '' ? Validation::date($payload, 'next_review_date', 'Fecha de próxima revisión inválida.') : null,
     ]);
 
     // Comentario: Responder creación persistida.

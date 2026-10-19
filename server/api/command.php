@@ -38,11 +38,7 @@ if ($connection instanceof PDO) {
     if ($deviceId !== null) {
         $commands = CommandRepository::pendingByDevice($connection, $deviceId);
 
-        // Comentario: Extraer identificadores entregados para trazabilidad.
-        $commandIds = array_map(static fn (array $command): int => (int) $command['id'], $commands);
-
-        // Comentario: Marcar comandos como enviados tras entregarlos.
-        CommandRepository::markAsSent($connection, $commandIds);
+        // Comentario: Consultar la cola no acredita entrega ni ejecución; conservar pendientes hasta un ACK futuro.
 
         // Comentario: Indicar persistencia consultada aunque no haya comandos.
         $meta = ['remote_start_enabled' => false, 'persistence' => 'database'];
@@ -54,6 +50,7 @@ JsonResponse::success(
     [
         'device_id' => $deviceUid,
         'commands' => $commands,
+        'execution_supported' => false,
         'message' => 'Los comandos remotos siguen sujetos a validación local del firmware.',
     ],
     $meta

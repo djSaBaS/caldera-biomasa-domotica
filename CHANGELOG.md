@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## [0.4.7-auditoria-tecnica] - 2026-10-19
+
+### Estado
+
+- Bloque 1 **INCOMPLETO**: UTENTE/SY325 inaccesibles, guardas originales y validación física pendientes. Sin avance al bloque 2 ni salidas físicas habilitadas.
+
+### Corregido
+
+- Acceso anónimo a combustible/mantenimiento; CSRF y roles en escrituras. Revocación inmediata de sesiones por estado/rol, inactividad y modo estricto.
+- Confusión de UID query/cuerpo en autenticación de dispositivo; clave compartida restringida a desarrollo; router con raíz pública limitada.
+- Tipos, fechas, finitud, límites de cuerpo y secretos; errores genéricos y limitador con fallo cerrado.
+- Estados CHC/REC, aliases legados explícitos y versión de contrato 1.1; identificador de telemetría capturado antes del UPDATE de última comunicación.
+- Parser Mega antes de estrechar tipos, descarte de líneas largas, versiones uint32 y rechazo atómico; parser ESP32 ArduinoJson con respuesta compacta sin catálogo ni fallback aplicable.
+- ON/OFF independientes por fase y ventana MAN con CL09/CP09/T04/T05; enclavamiento de alarmas, NaN/Inf y disipación simulada con sonda válida.
+- Consulta de comandos sin consumo ni falsa entrega; START bloqueado, creación e historial atómicos. Calidad/antigüedad de muestra visibles en panel.
+
+### Añadido
+
+- EEPROM esquema 2 y migración del layout AVR v1, evitando escrituras repetidas de la misma configuración.
+- Migración SQL versionada, 65 entradas de parámetros con páginas, matriz de once estados, discrepancias, inventario y decisiones actualizadas.
+- Regresiones HTTP/MySQL y de migración; parsers reales y sketch Mega ejecutados con E/S simulada y sanitizadores. CI amplía comprobaciones y fija plataformas/parser.
+
+
 ## [0.4.6-dashboard-protegido-mysql-ci] - 2026-05-15
 
 ### Añadido

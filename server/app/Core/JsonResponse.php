@@ -41,6 +41,13 @@ final class JsonResponse
         // Comentario: Declarar formato JSON UTF-8 para todos los consumidores.
         header('Content-Type: application/json; charset=utf-8');
 
+        // Comentario: Evitar almacenar respuestas de sesión y configuración en cachés compartidas.
+        header('Cache-Control: no-store');
+        // Comentario: Impedir que el navegador interprete JSON como contenido ejecutable.
+        header('X-Content-Type-Options: nosniff');
+        // Comentario: Identificar la revisión del contrato independientemente de la versión del producto.
+        $meta['protocol_version'] = '1.1';
+
         // Comentario: Convertir arrays vacíos a objetos JSON para cumplir el contrato documentado.
         $safeData = $data === [] ? new stdClass() : $data;
 

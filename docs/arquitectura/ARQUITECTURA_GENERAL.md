@@ -1,80 +1,25 @@
-# Arquitectura general
+# Arquitectura general: base auditada 0.4.7
 
-## Resumen
+Estado de operación: **solo simulación**. La arquitectura prevista conserva al Mega como autoridad local y al ESP32 como puente; el código aún no reproduce la centralita original completa. [Auditoría y bloqueos](../auditoria/BLOQUE_1.md).
 
-El proyecto se organiza como un monorepo con tres áreas principales:
-
-1. Firmware Arduino Mega para control crítico local.
-2. Firmware ESP32 para conectividad y puente con backend.
-3. Backend PHP, MySQL y panel web Bootstrap.
-
-## Flujo de datos
-
-```text
-Sensores / actuadores
-        ↓
-Arduino Mega
-        ↓ serial/UART
-ESP32
-        ↓ HTTP JSON
-Backend PHP
-        ↓
-MySQL
-        ↓
-Panel Web
+```mermaid
+flowchart LR
+  UI[Panel Bootstrap y JavaScript] -->|Sesión y CSRF| API[API PHP / raíz pública limitada]
+  API -->|PDO y consultas preparadas| DB[(MySQL / MariaDB)]
+  ESP[ESP32 / puente simulado] -->|HTTP JSON 1.1 / clave de dispositivo| API
+  MEGA[Mega / control simulado] <-->|UART TEL CFG ACK| ESP
+  MEGA <--> EEPROM[(EEPROM esquema 2)]
+  FUENTES[Manuales / contraste incompleto] -.-> MEGA
 ```
 
-## Flujo inverso de configuración
+| Área | Implementado | Pendiente crítico o límite |
+| --- | --- | --- |
+| Control local | Sensores y salidas simulados, cache EEPROM, parser, perfiles de sinfín, alarmas enclavadas | FSM original completa, sensores físicos, sinfín 2, recetas, watchdog, recuperación de apagón, protecciones independientes |
+| Conectividad | Parser JSON tipado, configuración compacta persistida, reenvío periódico y ACK parcial | TLS y CA, antigüedad de datos, cola durable, comandos con ACK y deduplicación |
+| Backend | Roles vigentes, sesión/CSRF, claves por UID, validación, repositorios, migración SQL | ACL por dispositivo si cambia el modelo de instalación; despliegue y operación seguros |
+| Interfaz | Login, consulta de snapshot, escape HTML, calidad y edad de muestra | Pantallas administrativas funcionales completas, control real y pruebas de navegador |
+| Persistencia | Esquema InnoDB y migración 0.4.7, JSON de evidencia, relaciones FK | Migración probada también en MySQL 8.4 remoto, retención, copias/restauración y trazabilidad integral de aplicación de configuración |
 
-```text
-Panel Web
-   ↓
-Backend PHP / MySQL
-   ↓ consulta periódica
-ESP32
-   ↓ serial/UART
-Arduino Mega
-   ↓ validación local
-Parámetros activos
-```
+La raíz HTTP es `server/public`; el router publica endpoints de `server/api` por lista de rutas acotada. `app`, `sql`, `.env` y `storage` no forman parte de la raíz pública. La web se sirve separadamente durante desarrollo con CORS limitado a los orígenes locales documentados; las cookies Secure requieren configurar correctamente HTTPS en el despliegue.
 
-## Separación de responsabilidades
-
-### Arduino Mega
-
-- Lee sensores críticos.
-- Ejecuta máquina de estados.
-- Aplica seguridad local.
-- Controla salidas solo cuando se retire explícitamente la simulación.
-- Debe seguir funcionando de forma segura sin internet.
-
-### ESP32
-
-- Gestiona WiFi.
-- Envía telemetría.
-- Descarga configuración y comandos.
-- Actúa como puente, no como controlador crítico principal.
-
-### Backend PHP
-
-- Recibe telemetría.
-- Sirve configuración validada.
-- Prepara comandos remotos con trazabilidad.
-- Registra eventos, alarmas, combustible y mantenimiento.
-- Usa PDO y MySQL sin framework pesado en esta fase.
-
-### Web
-
-- Muestra estado y KPIs.
-- Permite preparar cambios de parámetros.
-- Muestra históricos y registros.
-- Gestionará usuarios y roles en fases siguientes.
-- Usa Bootstrap 5 mobile-first.
-
-## Decisiones de Sprint 01
-
-- Mantener firmware en `SIMULATION_MODE = true`.
-- No activar relés reales.
-- Devolver cola de comandos vacía.
-- Crear SQL inicial completo antes de persistencia real en endpoints.
-- Mantener frontend con datos simulados hasta conectar API autenticada.
+El hardware inventariado es información heredada del repositorio, no verificación física. Solo UART tiene correspondencia de pines en código; su cableado y niveles necesitan comprobación de banco. No hay salida de caldera ni carga habilitada. El esquema original de la página 27 del UTENTE aportado por el propietario sigue inaccesible.

@@ -3,6 +3,9 @@
 // Comentario: Declarar tipos estrictos para integración reproducible con MySQL real.
 declare(strict_types=1);
 
+// Comentario: Retener salida de aserciones hasta completar las operaciones de sesión.
+ob_start();
+
 // Comentario: Leer host MySQL de entorno CI o valor local.
 $host = getenv('DB_HOST') ?: '127.0.0.1';
 
@@ -19,9 +22,9 @@ $user = getenv('DB_USER') ?: 'root';
 $password = getenv('DB_PASS') ?: 'root';
 
 // Comentario: Validar nombre de base para evitar SQL dinámico inseguro.
-if (!preg_match('/^[A-Za-z0-9_]+$/', $database)) {
+if (!preg_match('/^[A-Za-z0-9_]+_ci$/', $database)) {
     // Comentario: Informar configuración inválida.
-    fwrite(STDERR, 'DB_NAME solo puede contener letras, números y guion bajo.' . PHP_EOL);
+    fwrite(STDERR, 'La integración destructiva requiere una base desechable terminada en _ci.' . PHP_EOL);
 
     // Comentario: Salir con error de integración.
     exit(1);

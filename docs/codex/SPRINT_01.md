@@ -1,3 +1,5 @@
+> Documento histórico de planificación. El bloque 1 se rige por `docs/auditoria/BLOQUE_1.md` y no se considera un sprint.
+
 # Sprint 01 — Base funcional segura
 
 ## Objetivo
@@ -62,7 +64,7 @@ Preparar el repositorio para desarrollo real con una base mínima, coherente y s
 - Mantener `SIMULATION_MODE = true`.
 - Crear sensores y salidas simuladas.
 - Implementar máquina de estados inicial.
-- Implementar ciclo de sinfín ON = OFF.
+- Preferencia histórica ON=OFF: sustituida por perfiles con tiempos independientes y MAN T04/T05 en la auditoría del bloque 1.
 - Evaluar seguridad antes de aplicar salidas.
 - Enviar telemetría simulada por serie.
 

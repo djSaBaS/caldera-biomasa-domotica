@@ -38,5 +38,8 @@ php tests/firmware/validate_firmware_contract.php
 # Comentario: Comprobar que los diagramas no inventan cableados no documentados.
 php tests/firmware/validate_connection_diagrams.php
 
+# Comentario: Ejecutar parsers y sketch Mega reales sobre E/S simulada con sanitizadores.
+tests/firmware/run_native_tests.sh
+
 # Comentario: Comprobar espacios finales y problemas básicos del diff de Git.
 git diff --check

@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 // Comentario: Cargar utilidades mínimas necesarias sin depender de Composer.
 require_once __DIR__ . '/../../server/app/Core/JsonResponse.php';
+// Comentario: Validar configuraciones con la misma capa de tipos usada por la API.
+require_once __DIR__ . '/../../server/app/Core/Validation.php';
 // Comentario: Cargar lector de peticiones requerido por el validador de API key.
 require_once __DIR__ . '/../../server/app/Core/Request.php';
 // Comentario: Cargar limitador requerido por el validador de API key.
@@ -130,6 +132,18 @@ if ($previousDeviceApiKey !== false) {
     // Comentario: Eliminar variable si no existía antes de la prueba.
     putenv('DEVICE_API_KEY');
 }
+
+// Comentario: Comprobar la desactivación de la clave compartida en producción.
+$previousAppEnvironment = getenv('APP_ENV');
+putenv('APP_ENV=production');
+putenv('DEVICE_API_KEY=clave-unitaria-local-no-productiva-123456');
+assert_same(false, $environmentKeyPolicy->invoke(null, 'clave-unitaria-local-no-productiva-123456'), 'Producción rechaza la clave compartida de entorno.');
+// Comentario: Restaurar el contexto exacto de entorno tras la regresión.
+putenv($previousAppEnvironment === false ? 'APP_ENV' : 'APP_ENV=' . $previousAppEnvironment);
+putenv($previousDeviceApiKey === false ? 'DEVICE_API_KEY' : 'DEVICE_API_KEY=' . $previousDeviceApiKey);
+// Comentario: Asegurar que el catálogo anuncia las unidades originales de MAN.
+assert_same('min', $catalog['man_pause_minutes']['unit'], 'T04 se expresa en minutos.');
+assert_same('s', $catalog['man_work_seconds']['unit'], 'T05 se expresa en segundos.');
 
 // Comentario: Emitir resumen compacto de pruebas unitarias.
 echo "Pruebas unitarias completadas: {$testsRun} ejecutadas, {$testsFailed} fallidas." . PHP_EOL;
