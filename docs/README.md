@@ -19,7 +19,7 @@ El objetivo no es inventar una caldera nueva, sino replicar de forma fiel el fun
 2. El sistema original debe poder mantenerse como respaldo.
 3. La lógica debe respetar los manuales originales de la caldera.
 4. El sinfín trabaja por tiempo, no por PID directo.
-5. El tiempo de sinfín encendido debe ser igual al tiempo de pausa.
+5. El sinfín conserva tiempos independientes por fase; ON=OFF es una preferencia del proyecto y MAN usa su propia ventana T04/T05.
 6. La web puede modificar configuración, pero el firmware debe validar los límites.
 7. Ninguna orden remota debe saltarse condiciones críticas de seguridad.
 
@@ -47,4 +47,8 @@ tests/                      Pruebas futuras.
 
 ## Estado actual
 
-Carga inicial del repositorio con estructura, documentación base y archivos mínimos para empezar a trabajar con Codex desde GitHub.
+Revisión 0.4.7 en simulación, con auditoría técnica abierta y fuentes críticas pendientes.
+
+## Auditoría técnica del bloque 1
+
+Estado **INCOMPLETO**: [informe y aceptación](auditoria/BLOQUE_1.md), [fuentes](auditoria/FUENTES_ORIGINALES.md), [parámetros](auditoria/PARAMETROS_ORIGINALES.md), [estados](auditoria/MAQUINA_ESTADOS.md), [seguridad](auditoria/SEGURIDAD.md), [pruebas](auditoria/PRUEBAS.md). No avanzar al bloque 2 mientras persistan bloqueos críticos.

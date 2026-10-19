@@ -6,9 +6,11 @@ El objetivo no es inventar una caldera nueva. El objetivo es respetar la lógica
 
 ## Estado actual
 
-**Versión:** `0.4.6-dashboard-protegido-mysql-ci`
-**Fecha:** 2026-05-15
-**Estado:** base de desarrollo con backend PHP, dashboard protegido por sesión, frontend sincronizado, persistencia MySQL opcional, integración MySQL efímera en CI, datos demo, tests y firmware con cache offline de configuración.
+**Versión:** `0.4.7-auditoria-tecnica`
+**Fecha:** 2026-10-19
+**Estado:** auditoría técnica **INCOMPLETA** y revisión en rama independiente. Hay correcciones y pruebas automatizadas; UTENTE y su esquema ya se han contrastado; faltan la ficha SCHEDA independiente, revisión instalada, guardas completas y validación física. **No avanzar al bloque 2.**
+
+El [informe de aceptación](docs/auditoria/BLOQUE_1.md) distingue PASA, FALLA y NO COMPROBADO. Se han contrastado Pasqualicchio, CTP **UTENTE/TECNICO** y la variante genérica **SY325 Pellet Rev.1.3**. Los [documentos aportados se conservan íntegros](docs/manuales/README.md), con procedencia y SHA-256. El propietario confirma un sinfín instalado y placa con capacidad para dos; no se aplican a CTP las reglas C40/MAN ni los bornes de la variante genérica. Véanse [fuentes y discrepancias](docs/auditoria/FUENTES_ORIGINALES.md), [65 parámetros con páginas](docs/auditoria/PARAMETROS_ORIGINALES.md), [matriz de estados](docs/auditoria/MAQUINA_ESTADOS.md), [diferencias de variante](docs/auditoria/VARIANTE_SY325_PELLET.md) y [resultados de pruebas](docs/auditoria/PRUEBAS.md).
 
 Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte firmware sigue en simulación y la lógica real debe validarse en banco antes de cualquier instalación.
 
@@ -18,7 +20,7 @@ Esta versión **no debe conectarse todavía a cargas reales de 230V**. La parte 
 2. El sistema original debe poder mantenerse como respaldo.
 3. La lógica debe respetar los manuales originales de la caldera.
 4. El sinfín trabaja por tiempo, no por PID directo.
-5. El tiempo de sinfín encendido debe ser igual al tiempo de pausa.
+5. El sinfín conserva trabajo y pausa independientes por fase. ON=OFF es una preferencia configurable del proyecto, no una regla universal del fabricante. MAN usa CL09/CP09 dentro de T05, tras esperar T04 minutos.
 6. La web puede modificar configuración, pero el firmware debe validar límites.
 7. Ninguna orden remota debe saltarse condiciones críticas de seguridad.
 8. Si falla un sensor crítico, se debe pasar a modo seguro.
@@ -109,7 +111,7 @@ El login real usa:
 - tabla `roles`,
 - `password_hash()` para crear hashes,
 - `password_verify()` para validar contraseñas,
-- sesiones PHP con cookie HTTP-only,
+- sesiones PHP con cookie HTTP-only, rol revalidado en MySQL y caducidad por inactividad,
 - restablecimiento preparado mediante token hasheado,
 - autorización por roles para endpoints administrativos,
 - protección CSRF para operaciones web mutables,
@@ -144,7 +146,7 @@ La base administrativa ya permite separar endpoints de dispositivo y endpoints d
 - `devices.php` exige sesión para listar y rol `administrador` con CSRF para crear o editar dispositivos.
 - `command_request.php` exige sesión, rol operativo, CSRF, MySQL disponible y dispositivo registrado.
 
-El encendido remoto (`START`) sigue bloqueado salvo que `REMOTE_START_ALLOWED=true`, y aun así el firmware debe volver a validar condiciones locales.
+El encendido remoto (`START`) está bloqueado incondicionalmente en esta revisión, incluso con la antigua bandera `REMOTE_START_ALLOWED`. Las demás órdenes solo se registran: no hay ejecución ni ACK de comandos en firmware. Consultar la cola no consume ni confirma una orden.
 
 ## Base de datos
 
@@ -153,6 +155,8 @@ El esquema inicial está en:
 ```text
 server/sql/schema.sql
 ```
+
+Para actualizar una base 0.4.6 existente, seguir [migraciones](server/sql/migrations.md); `schema.sql` con `CREATE IF NOT EXISTS` no actualiza tablas instaladas.
 
 El seed local de ejemplo está en:
 
@@ -214,7 +218,7 @@ Archivo principal:
 firmware/arduino-mega/src/main.ino
 ```
 
-Incluye `SIMULATION_MODE = true`, máquina de estados base, sensores simulados, salidas simuladas, seguridad local básica, ciclo del sinfín ON = OFF, telemetría `TEL:{json}` hacia ESP32 y cache EEPROM de la última configuración válida para trabajar sin internet.
+Incluye `SIMULATION_MODE = true` obligatorio en compilación, máquina de estados de demostración por reloj, sensores simulados, salidas simuladas, seguridad local básica, ciclos independientes por fase, ventana MAN T04/T05 y preferencia simétrica legada, telemetría `TEL:{json}` hacia ESP32 y cache EEPROM de la última configuración válida para trabajar sin internet.
 
 ### ESP32
 
@@ -224,11 +228,11 @@ Archivo principal:
 firmware/esp32/src/main.ino
 ```
 
-Incluye `SIMULATION_MODE = true`, placeholders WiFi, envío HTTP de telemetría cuando se habilite red, consulta de configuración, envío `CFG:` hacia Arduino, recepción `ACK:` y reenvío de confirmaciones al backend.
+Incluye `SIMULATION_MODE = true` obligatorio en compilación, parser ArduinoJson 7.4.2, placeholders WiFi, envío HTTP de telemetría cuando se habilite red, consulta de configuración, envío `CFG:` hacia Arduino, recepción `ACK:` y reenvío de confirmaciones al backend.
 
 ### Configuración offline de caldera
 
-La configuración remota vive en MySQL, pero Arduino Mega guarda en EEPROM la última configuración válida que recibe desde ESP32. Si se pierde internet, Arduino sigue usando esos parámetros locales y no depende del backend para reglas críticas como bomba, temperatura objetivo, seguridad o ciclo del sinfín.
+La configuración remota vive en MySQL, pero Arduino Mega guarda en EEPROM la última configuración válida que recibe desde ESP32. Si se pierde internet, el simulador conserva esos parámetros locales. Esto no prueba continuidad segura de la caldera real ni implementación de todas las reglas originales.
 
 Flujo actual:
 
@@ -239,7 +243,7 @@ Flujo actual:
 5. Arduino valida rangos, aplica, guarda en EEPROM y responde `ACK:{json}`.
 6. ESP32 reenvía el ACK a `POST /api/config_ack.php`.
 
-Sinceramente: todavía no usaría esto en producción real. Falta probarlo con hardware, cortes de alimentación, respuestas HTTP corruptas y watchdog. La decisión correcta ahora es mantener `SIMULATION_MODE=true` hasta pasar banco de pruebas.
+No está validado para producción real. Hay regresiones de respuestas corruptas y cache, pero faltan hardware, cortes físicos de alimentación y watchdog. La decisión correcta ahora es mantener `SIMULATION_MODE=true` hasta pasar banco de pruebas.
 
 Los diagramas de conexión mantenidos están en:
 
@@ -247,13 +251,16 @@ Los diagramas de conexión mantenidos están en:
 docs/arquitectura/CONEXIONES.md
 ```
 
-Actualmente solo está documentado como cableado real el UART Arduino Mega↔ESP32. Los accesorios de caldera aparecen como pinout pendiente para evitar inventar conexiones no validadas.
+Actualmente solo hay correspondencia de pines en código para UART Arduino Mega↔ESP32; no se ha comprobado el cableado físico. Los accesorios de caldera aparecen como pinout pendiente para evitar inventar conexiones no validadas.
 
 ## Cómo probar en desarrollo
 
 ### Ejecutar puerta de calidad local
 
+Requiere PHP, Node, g++, Arduino CLI y ArduinoJson 7.4.2. Las pruebas nativas usan los headers reales y el sketch Mega con E/S simulada.
+
 ```bash
+arduino-cli lib install ArduinoJson@7.4.2
 tests/backend/run_quality_checks.sh
 ```
 
@@ -272,7 +279,7 @@ find server -name '*.php' -print0 | xargs -0 -n1 php -l
 ### Servir backend
 
 ```bash
-php -S localhost:8081 -t server
+php -S localhost:8081 -t server/public server/public/router.php
 ```
 
 ### Ejecutar prueba de humo

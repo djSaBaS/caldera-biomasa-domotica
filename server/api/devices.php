@@ -55,7 +55,7 @@ $firmwareArduino = Validation::optionalString($payload, 'firmware_arduino', 40);
 $firmwareEsp32 = Validation::optionalString($payload, 'firmware_esp32', 40);
 
 // Comentario: Obtener identificador si se trata de edición.
-$deviceId = (int) ($payload['id'] ?? 0);
+$deviceId = Validation::optionalId($payload);
 
 // Comentario: Actualizar dispositivo existente sin tocar API key.
 if ($deviceId > 0) {
@@ -69,10 +69,10 @@ if ($deviceId > 0) {
 $deviceUid = Validation::requiredString($payload, 'device_uid', 'El identificador del dispositivo es obligatorio.', 80);
 
 // Comentario: Validar API key inicial solo para creación.
-$apiKey = Validation::requiredString($payload, 'api_key', 'La API key inicial del dispositivo es obligatoria.', 255);
+$apiKey = Validation::requiredSecret($payload, 'api_key');
 
 // Comentario: Exigir longitud mínima compatible con fallo cerrado.
-if (strlen($apiKey) < 24) {
+if (strlen($apiKey) < 24 || in_array($apiKey, ['REEMPLAZAR_POR_UNA_CLAVE_LARGA_ALEATORIA', 'TU_API_KEY_AQUI', 'cambiar_en_local'], true)) {
     JsonResponse::error('validacion_error', 'La API key debe tener al menos 24 caracteres.', 422, ['field' => 'api_key']);
 }
 

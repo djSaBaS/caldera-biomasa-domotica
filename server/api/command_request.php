@@ -24,14 +24,9 @@ $deviceUid = Validation::requiredString($payload, 'device_id', 'El dispositivo d
 // Comentario: Validar tipo de comando permitido.
 $commandType = Validation::allowedString($payload, 'command_type', ['START', 'STOP', 'RESET_ALARM', 'ENTER_MAINTENANCE', 'EXIT_MAINTENANCE'], 'El comando solicitado no está permitido.');
 
-// Comentario: Bloquear encendido remoto salvo habilitación explícita para banco de pruebas.
-if ($commandType === 'START' && getenv('REMOTE_START_ALLOWED') !== 'true') {
+// Comentario: Bloquear START hasta implementar y verificar ejecución y ACK local del firmware.
+if ($commandType === 'START') {
     JsonResponse::error('encendido_remoto_bloqueado', 'El encendido remoto está bloqueado por seguridad en esta fase.', 403);
-}
-
-// Comentario: Bloquear encendido remoto al rol mantenimiento aunque se habilite la bandera.
-if ($commandType === 'START' && (string) ($user['role'] ?? '') === 'mantenimiento') {
-    JsonResponse::error('permiso_denegado', 'El rol mantenimiento no puede solicitar encendido remoto.', 403);
 }
 
 // Comentario: Intentar conexión real a MySQL para trazabilidad obligatoria.
@@ -54,10 +49,17 @@ if ($deviceId === null) {
 $commandPayload = json_encode(['requested_from' => 'web', 'safe_mode' => true], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
 // Comentario: Insertar comando pendiente con expiración corta.
+// Comentario: Hacer atómica la creación del comando y su historial de auditoría.
+$connection->beginTransaction();
+
+// Comentario: Crear la fila pendiente dentro de la transacción.
 $commandId = CommandRepository::createPending($connection, ['device_id' => $deviceId, 'requested_by' => (int) $user['id'], 'command_type' => $commandType, 'payload_json' => $commandPayload]);
 
 // Comentario: Registrar historial inicial del comando.
 CommandRepository::addHistory($connection, $commandId, 'pendiente', 'Comando creado desde panel web y pendiente de validación por firmware.');
 
+// Comentario: Confirmar ambas escrituras antes de comunicar el identificador al panel.
+$connection->commit();
+
 // Comentario: Responder creación auditable del comando.
-JsonResponse::success(['message' => 'Comando registrado para validación local del firmware.', 'command_id' => $commandId, 'remote_start_enabled' => getenv('REMOTE_START_ALLOWED') === 'true'], [], 201);
+JsonResponse::success(['message' => 'Comando registrado para validación local del firmware.', 'command_id' => $commandId, 'remote_start_enabled' => false], [], 201);

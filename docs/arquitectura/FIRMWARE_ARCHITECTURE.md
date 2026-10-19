@@ -1,85 +1,15 @@
-# Arquitectura firmware
+# Arquitectura firmware 0.4.7
 
-## Arduino Mega
+Ambos sketches fijan `SIMULATION_MODE=true` y lo exigen con `static_assert`. No hay `digitalWrite`, PWM, relés, dimmers ni control de cargas físicas. Desactivar una constante no habilita una implementación operativa.
 
-Controlador crítico local.
+Mega mantiene sensores simulados, estado de demostración, salidas lógicas y configuración local. `firmware/common/ControlModel.h` contiene parser estricto, límites de transporte y modelo temporal de sinfín. La secuencia general sigue avanzando por reloj cada 15 segundos; no acredita las transiciones originales. La reconstrucción y su matriz están en [máquina de estados](../auditoria/MAQUINA_ESTADOS.md).
 
-Responsabilidades:
+Los perfiles ACC/STB/NORMAL/MOD/MAN contienen trabajo y pausa independientes. MAN usa T04 en minutos, T05 en segundos y pausa CP09 antes de CL09 dentro de T05. El valor legado se expande a ON=OFF solo como preferencia del proyecto; MAN sin perfil explícito queda deshabilitado. Las salidas de ventilación continúan con porcentajes generales y la bomba es un modelo térmico sin histéresis original completa.
 
-- Leer sensores.
-- Ejecutar máquina de estados.
-- Controlar relés.
-- Controlar dimmers.
-- Mostrar información en LCD1602.
-- Validar seguridad.
-- Recibir configuración desde ESP32.
-- Enviar estado al ESP32.
+Una alarma detectada queda enclavada; NaN/Inf también producen fallo. La sobretemperatura corta aporte y encendedor, conservando la disipación simulada con sonda válida. No existe procedimiento de reset implementado ni validación de instalación. Arrancar siempre en OFF y recuperar consignas EEPROM no equivale a REC.
 
-## ESP32
+ESP32 lee UART y usa ArduinoJson 7.4.2 para verificar sobre HTTP, protocolo, origen persistido, UID, tipos y límites. Pide respuesta compacta sin catálogo, no aplica fallback remoto y reenvía configuración periódicamente. No consume comandos no implementados ni inventa telemetría cuando falta Mega fuera de simulación. `TelemetryFreshness.h` limita a 15 s la edad desde recepción UART y consume la muestra después de persistencia confirmada; una muestra vencida no vuelve a convertirse en demo. Valida objeto/UID antes de sustituir la pendiente. Los ACK se reintentan como máximo cada cinco segundos. La red sigue deshabilitada en el sketch de simulación; los parsers y el modelo se prueban en host.
 
-Puente de conectividad.
+Los detalles de framing, unidades, ACK de alcance parcial y migración EEPROM v1→v2 se especifican en [contrato 1.1](API_CONTRACT.md). `ConfigJournal.h` reserva dos ranuras desde EEPROM 128, separadas 128 bytes, con registros CBJ1 de 105 bytes, generación uint32, campos little endian, CRC32 y marcador final. Invalida la ranura destino, escribe y confirma el marcador al final sin tocar la copia activa. Relee antes de activar/confirmar; conserva el legado de dirección cero para migración. La inyección de cortes y corrupción pasa en host; los ensayos eléctricos reales siguen pendientes. Los temporizadores usan resta sin signo; eso se prueba en rollover, sin afirmar ausencia de todas las pérdidas de enlace.
 
-Responsabilidades:
-
-- Gestionar WiFi.
-- Enviar telemetría al backend.
-- Consultar configuración y comandos.
-- Enviar configuración validada al Arduino.
-- No tomar decisiones críticas de combustión.
-
-## Comunicación Arduino ↔ ESP32
-
-Inicialmente se recomienda serial/UART con mensajes JSON compactos o protocolo de texto delimitado.
-
-## Regla técnica
-
-No usar `delay` en firmware de control. Usar temporización por `millis()`.
-
-## Configuración offline Sprint 03
-
-La caldera no debe depender de internet para mantener una operación segura. La arquitectura queda separada así:
-
-- Arduino Mega mantiene la lógica crítica, los límites térmicos y la última configuración válida en EEPROM.
-- ESP32 actúa como puente HTTP y nunca decide por sí solo condiciones críticas de combustión.
-- Backend/MySQL es la fuente remota de configuración, pero no es requisito para que Arduino conserve los últimos parámetros validados.
-
-## Protocolo serie interno
-
-El enlace recomendado entre placas es UART dedicado:
-
-- Arduino Mega `Serial1` hacia ESP32 `Serial2`.
-- Velocidad inicial `115200` baudios.
-- Tramas terminadas en salto de línea.
-
-Tipos de trama:
-
-```text
-TEL:{json}
-CFG:version=2;auger=12;fan1=58;fan2=42;pump=58;target=74;maintenance=81;safety=90;telemetry=15;poll=45;notifications=1
-ACK:{json}
-```
-
-## Flujo de datos hacia MySQL
-
-1. Arduino genera `TEL:{json}` con estado, sensores, salidas y versión de configuración activa.
-2. ESP32 retira el prefijo `TEL:` y envía el JSON a `POST /api/telemetry.php`.
-3. El backend valida API key, `device_id` y estado de caldera.
-4. Si MySQL está disponible y el dispositivo existe, `TelemetryRepository` persiste la muestra.
-
-## Flujo de configuración remota con cache local
-
-1. ESP32 consulta `GET /api/config.php?device_id=caldera-01`.
-2. ESP32 extrae parámetros de firmware de la respuesta JSON del backend.
-3. ESP32 envía una trama `CFG:` compacta al Arduino Mega.
-4. Arduino valida rangos localmente antes de aplicar.
-5. Arduino guarda la configuración válida en EEPROM.
-6. Arduino responde `ACK:{json}`.
-7. ESP32 envía ese ACK a `POST /api/config_ack.php` cuando hay red.
-
-## Advertencia realista
-
-El parsing JSON del ESP32 está implementado sin ArduinoJson para no añadir dependencias todavía. Esto sirve para banco de pruebas y contrato inicial, pero para producción conviene evaluar ArduinoJson con límites de memoria definidos, pruebas de respuestas corruptas y watchdog de comunicaciones.
-
-## Diagramas de conexión
-
-Los diagramas mantenidos están en `docs/arquitectura/CONEXIONES.md`. Solo se documenta como cableado real el enlace UART Mega↔ESP32; los accesorios de caldera siguen marcados como pinout pendiente para no inventar conexiones.
+Compilación reproducible: Arduino CLI 1.5.1, AVR 1.8.8, ESP32 3.3.12 y ArduinoJson 7.4.2. `compile_firmware.sh` instala versiones fijadas; `ARDUINO_SKIP_INSTALL=1` permite compilar con las ya preparadas. Los headers comunes se copian a los sketches temporales. Las regresiones nativas compilan esos mismos headers y el sketch Mega con UART/reloj/EEPROM simulados; no sustituyen la compilación de placa ni pruebas de hardware.

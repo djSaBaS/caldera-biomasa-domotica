@@ -62,6 +62,8 @@ final class DashboardRepository
         return [
             'device_id' => $deviceUid !== '' ? $deviceUid : 'caldera-01',
             'source' => 'fallback_safe',
+            'telemetry_status' => 'sin_muestra',
+            'sample_age_seconds' => null,
             'generated_at' => gmdate('c'),
             'kpis' => [
                 ['label' => 'Estado', 'value' => 'NORMAL', 'icon' => 'bi-fire', 'color' => 'success'],
@@ -92,13 +94,13 @@ final class DashboardRepository
     {
         // Comentario: Preparar consulta filtrada si se recibe identificador de dispositivo.
         if ($deviceUid !== '') {
-            $statement = $connection->prepare('SELECT telemetry.*, devices.device_uid FROM telemetry INNER JOIN devices ON devices.id = telemetry.device_id WHERE devices.device_uid = :device_uid ORDER BY telemetry.recorded_at DESC, telemetry.id DESC LIMIT 1');
+            $statement = $connection->prepare('SELECT telemetry.*, UNIX_TIMESTAMP(telemetry.recorded_at) AS recorded_epoch, devices.device_uid FROM telemetry INNER JOIN devices ON devices.id = telemetry.device_id WHERE devices.device_uid = :device_uid ORDER BY telemetry.recorded_at DESC, telemetry.id DESC LIMIT 1');
 
             // Comentario: Ejecutar consulta parametrizada por UID.
             $statement->execute(['device_uid' => $deviceUid]);
         } else {
             // Comentario: Preparar consulta global para la última muestra disponible.
-            $statement = $connection->query('SELECT telemetry.*, devices.device_uid FROM telemetry INNER JOIN devices ON devices.id = telemetry.device_id ORDER BY telemetry.recorded_at DESC, telemetry.id DESC LIMIT 1');
+            $statement = $connection->query('SELECT telemetry.*, UNIX_TIMESTAMP(telemetry.recorded_at) AS recorded_epoch, devices.device_uid FROM telemetry INNER JOIN devices ON devices.id = telemetry.device_id ORDER BY telemetry.recorded_at DESC, telemetry.id DESC LIMIT 1');
         }
 
         // Comentario: Obtener fila asociativa si existe.
@@ -116,6 +118,12 @@ final class DashboardRepository
     // Comentario: Aplicar datos de telemetría a KPIs y sección de estado.
     private static function applyTelemetry(array $snapshot, array $telemetry): array
     {
+        // Comentario: Distinguir muestras simuladas y su antigüedad de una lectura física en directo.
+        $raw = json_decode((string) ($telemetry['payload_json'] ?? '{}'), true);
+        $snapshot['telemetry_status'] = !empty($raw['simulation']) ? 'simulada' : 'registrada';
+        // Comentario: Mostrar edad de recepción sin deducir que una muestra antigua sigue vigente.
+        $snapshot['sample_age_seconds'] = max(0, time() - (int) ($telemetry['recorded_epoch'] ?? time()));
+
         // Comentario: Reemplazar KPIs dependientes de telemetría.
         $snapshot['kpis'][0]['value'] = (string) ($telemetry['boiler_state'] ?? 'NORMAL');
         $snapshot['kpis'][1]['value'] = self::formatNumber($telemetry['water_temp'] ?? null, ' °C');

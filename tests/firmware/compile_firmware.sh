@@ -14,17 +14,14 @@ ESP32_ADDITIONAL_URL="https://espressif.github.io/arduino-esp32/package_esp32_in
 # Comentario: Verificar que Arduino CLI está instalado antes de compilar firmware.
 arduino-cli version
 
-# Comentario: Actualizar índice estándar de plataformas Arduino.
-arduino-cli core update-index
-
-# Comentario: Instalar core AVR oficial necesario para Arduino Mega 2560.
-arduino-cli core install arduino:avr
-
-# Comentario: Actualizar índice incluyendo el proveedor ESP32 usado por Arduino CLI.
-arduino-cli --additional-urls "${ESP32_ADDITIONAL_URL}" core update-index
-
-# Comentario: Instalar core ESP32 necesario para compilar el puente WiFi.
-arduino-cli --additional-urls "${ESP32_ADDITIONAL_URL}" core install esp32:esp32
+# Comentario: Fijar plataformas y parser; permitir reutilizar instalaciones verificadas en banco sin red.
+if [[ "${ARDUINO_SKIP_INSTALL:-0}" != "1" ]]; then
+  arduino-cli core update-index
+  arduino-cli core install arduino:avr@1.8.8
+  arduino-cli --additional-urls "${ESP32_ADDITIONAL_URL}" core update-index
+  arduino-cli --additional-urls "${ESP32_ADDITIONAL_URL}" core install esp32:esp32@3.3.12
+  arduino-cli lib install ArduinoJson@7.4.2
+fi
 
 # Comentario: Crear directorio temporal para adaptar la estructura actual al formato clásico de sketch Arduino.
 TEMP_SKETCH_ROOT="$(mktemp -d)"
@@ -43,6 +40,11 @@ mkdir -p "${TEMP_SKETCH_ROOT}/caldera_esp32"
 
 # Comentario: Copiar firmware ESP32 usando nombre de archivo igual al sketch temporal.
 cp firmware/esp32/src/main.ino "${TEMP_SKETCH_ROOT}/caldera_esp32/caldera_esp32.ino"
+
+# Comentario: Copiar el modelo común para que los sketches temporales usen exactamente el código probado.
+cp firmware/common/*.h "${TEMP_SKETCH_ROOT}/caldera_arduino_mega/"
+# Comentario: Compartir el contrato y el parser JSON con el sketch ESP32.
+cp firmware/common/*.h "${TEMP_SKETCH_ROOT}/caldera_esp32/"
 
 # Comentario: Compilar Arduino Mega 2560 con CPU ATmega2560 explícita.
 arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 "${TEMP_SKETCH_ROOT}/caldera_arduino_mega"

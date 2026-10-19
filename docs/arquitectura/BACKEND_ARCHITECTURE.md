@@ -1,65 +1,15 @@
-# Arquitectura backend
+# Arquitectura backend 0.4.7
 
-## Tecnología
+PHP con tipos estrictos, PDO preparado y MySQL/MariaDB InnoDB. Las rutas de `server/api` se publican exclusivamente mediante `server/public/router.php` durante desarrollo. El núcleo común carga configuración fuera de Git, tipos/validación, errores JSON, limitación de peticiones, sesión/CSRF y servicios de persistencia. `Controllers` y `Models` permanecen reservados y sin implementación; no representan capas activas.
 
-- PHP 8+.
-- MySQL/MariaDB.
-- PDO con consultas preparadas.
-- API JSON sin framework pesado.
-- Sesiones PHP para autenticación web inicial.
+`AuthService` revalida usuario activo y rol en cada petición autenticada. `AuthorizationService` y `Csrf` protegen operaciones de panel; combustible y mantenimiento tienen el mismo límite que el resto del panel. `ApiKeyValidator` autentica el UID realmente usado por la escritura y evita contradicciones URL/cuerpo. La clave global queda restringida al desarrollo. No se han añadido ACL por dispositivo: el modelo actual es una instalación con roles globales.
 
-## Carpetas
+`TelemetryValidator` normaliza alias, estados, unidades y salidas antes de `TelemetryRepository`. `BoilerConfigValidator` exporta enteros compatibles con Mega, perfiles de fase y ventana MAN. `CommandRepository` conserva solicitudes e historial atómicos: consultar no significa entrega, y no existe ejecución firmware. `config_ack` conserva versión candidata y alcance parcial como evento, sin confirmar los campos aún no implementados.
 
-```text
-server/api/            Endpoints consumidos por ESP32 y panel web.
-server/app/Config/     Configuración por variables de entorno.
-server/app/Core/       Núcleo común: JSON, request, validación, PDO y API key.
-server/app/Controllers Controladores futuros si la API crece.
-server/app/Models/     Modelos futuros si se adopta mapeo más formal.
-server/app/Services/   Servicios y repositorios de negocio.
-server/public/         Entrada pública web/API.
-server/sql/            Esquema SQL, migraciones futuras y seed de desarrollo.
-server/storage/logs/   Logs locales.
-```
+`DashboardRepository` distingue ausencia de muestra, simulación y muestra registrada, con antigüedad de recepción. MySQL disponible no significa caldera en comunicación ni medida física válida. El frontend muestra esa calidad y avisa cuando falla la actualización; las secciones y gráficas demo siguen siendo demostración.
 
-## Núcleo común
+Sin MySQL, las sesiones no pueden validar permisos y las escrituras administrativas fallan con 503. Telemetría y ACK pueden responder 202 con `persistence=skipped`; config puede devolver `source=fallback_safe`. El puente rechaza ese origen y conserva la configuración local. Ningún fallback debe considerarse evidencia de control real.
 
-- `JsonResponse`: formato uniforme `success`, `data`, `error`, `meta`.
-- `Request`: lectura segura de método, JSON, query string y cabeceras.
-- `Validation`: validaciones reutilizables de texto, catálogo, números y fechas.
-- `Database`: conexión PDO y modo degradado con `tryConnection()`.
-- `ApiKeyValidator`: validación por variable de entorno o `devices.api_key_hash`.
+La primera migración versionada está en `server/sql/migrations/0.4.7_auditoria.sql`; ver procedimiento en `server/sql/migrations.md`. El esquema base refleja los mismos campos para instalaciones vacías. Las pruebas destructivas requieren nombre terminado en `_ci`. Los datos demo y sus hashes se conservan solo para desarrollo y pruebas.
 
-## Servicios y repositorios
-
-- `AuthService`: login, sesión, logout y solicitud de restablecimiento.
-- `DeviceRepository`: resolución de dispositivos y última comunicación.
-- `TelemetryRepository`: persistencia de telemetría.
-- `BoilerConfigRepository`: lectura de configuración activa.
-- `CommandRepository`: lectura y marcado de comandos pendientes.
-- `EventRepository`: persistencia de eventos.
-- `FuelRepository`: compras y resumen de combustible.
-- `MaintenanceRepository`: registros de mantenimiento.
-
-## Modo degradado seguro
-
-Si MySQL no está disponible, los endpoints no deben romper el panel ni el firmware durante desarrollo. En ese caso responden con metadatos como:
-
-```json
-{
-  "meta": {
-    "persistence": "skipped"
-  }
-}
-```
-
-Este modo no sustituye a producción. Solo permite continuar pruebas visuales y de firmware simulado.
-
-## Funcionalidades previstas para Sprint 03
-
-- Autorización por rol en cada endpoint.
-- CSRF en formularios autenticados.
-- Gestión real de usuarios desde panel.
-- Migraciones versionadas.
-- Tests automatizados con base de datos efímera.
-- Auditoría completa de cambios críticos.
+El manejo genérico de excepciones evita filtrar SQL y datos de entrada. El limitador falla cerrado al perder almacenamiento. HTTPS, política de retención, monitorización de errores, respaldo/restauración y configuración del servidor de producción siguen pendientes; no se ha desplegado esta revisión.

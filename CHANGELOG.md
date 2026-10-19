@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## [0.4.7-auditoria-tecnica] - 2026-10-19
+
+### Estado
+
+- Bloque 1 **INCOMPLETO**: SCHEDA independiente y revisión instalada pendientes; UTENTE y su esquema ya contrastados; guardas originales y validación física pendientes. Sin avance al bloque 2 ni salidas físicas habilitadas.
+
+### Corregido
+
+- Acceso anónimo a combustible/mantenimiento; CSRF y roles en escrituras. Revocación inmediata de sesiones por estado/rol, inactividad y modo estricto.
+- Confusión de UID query/cuerpo en autenticación de dispositivo; clave compartida restringida a desarrollo; router con raíz pública limitada.
+- Tipos, fechas, finitud, límites de cuerpo y secretos; errores genéricos y limitador con fallo cerrado.
+- Estados CHC/REC, aliases legados explícitos y versión de contrato 1.1; identificador de telemetría capturado antes del UPDATE de última comunicación.
+- Parser Mega antes de estrechar tipos, descarte de líneas largas, versiones uint32 y rechazo atómico; parser ESP32 ArduinoJson con respuesta compacta sin catálogo ni fallback aplicable.
+- ON/OFF independientes por fase y ventana MAN con CL09/CP09/T04/T05; enclavamiento de alarmas, NaN/Inf y disipación simulada con sonda válida.
+- Consulta de comandos sin consumo ni falsa entrega; START bloqueado, creación e historial atómicos. Calidad/antigüedad de muestra visibles en panel.
+
+### Añadido
+
+- EEPROM esquema 2 y migración del layout AVR v1, evitando escrituras repetidas de la misma configuración.
+- Migración SQL versionada, 65 entradas de parámetros con páginas, matriz de once estados, discrepancias, inventario y decisiones actualizadas.
+- Regresiones HTTP/MySQL y de migración; parsers reales y sketch Mega ejecutados con E/S simulada y sanitizadores. CI amplía comprobaciones y fija plataformas/parser.
+
+
+### Ampliación documental y regresiones de esta revisión
+
+- Conservados UTENTE 2008, SY325 Pellet Rev.1.3 (`4ad709.pdf`) y contexto recuperado; TECNICO aportado idéntico al existente. Inventario con procedencia, páginas, SHA-256 y comprobación automática de integridad.
+- Contrastado esquema CTP impreso 27/PDF 28 y diferencias de bornes; un sinfín instalado según propietario. CTP CL/CP y MAN se mantienen separados de C40/MAN continuo de la variante genérica.
+- Aclarados CHC→ACC, MAN según P34, REC y enfriamiento independiente V3; documentadas contradicciones de SPE, A06, UA05, P03/P04 y rangos/unidades.
+- Diario EEPROM CBJ1 de dos ranuras con CRC32, marcador final y lectura de verificación; no activar ni confirmar candidatos que no se persistieron. Migración v1/v2 legado y pruebas de cortes/corrupción/rollover.
+- ESP32 descarta telemetría con más de 15 s desde recepción local y no reenvía una muestra ya persistida. Reintento de ACK limitado a cinco segundos y URL de ejemplo corregida a `/api` bajo raíz pública.
+- CI #11 satisfactoria con MySQL 8.4 y ambos firmwares; recorrido local opcional de Chromium con nueve aserciones de login/DOM/cookie/CSRF/MySQL, sin CDN ni validación visual.
+- Pruebas nativas con 48 comprobaciones de control/protocolo/frescura, 26 del sketch Mega y 1077 de almacenamiento con fallos inyectados; no acreditan hardware ni cierran el bloque.
+
 ## [0.4.6-dashboard-protegido-mysql-ci] - 2026-05-15
 
 ### Añadido

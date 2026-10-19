@@ -55,7 +55,7 @@ $roleCode = Validation::allowedString($payload, 'role', ['administrador', 'opera
 $status = Validation::allowedString($payload, 'status', ['activo', 'inactivo', 'bloqueado'], 'El estado indicado no está permitido.');
 
 // Comentario: Obtener identificador si se trata de edición.
-$userId = (int) ($payload['id'] ?? 0);
+$userId = Validation::optionalId($payload);
 
 // Comentario: Actualizar usuario existente si hay identificador positivo.
 if ($userId > 0) {
@@ -66,7 +66,7 @@ if ($userId > 0) {
 }
 
 // Comentario: Validar contraseña inicial solo en creación.
-$password = Validation::requiredString($payload, 'password', 'La contraseña inicial es obligatoria.', 255);
+$password = Validation::requiredSecret($payload, 'password');
 
 // Comentario: Exigir longitud mínima razonable.
 if (strlen($password) < 12) {

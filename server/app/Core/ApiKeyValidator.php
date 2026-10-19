@@ -23,11 +23,17 @@ final class ApiKeyValidator
         // Comentario: Leer clave recibida desde cabecera HTTP.
         $providedKey = Request::header('X-API-KEY');
 
+        // Comentario: Validar una única identidad antes de cualquier vía de autenticación.
+        self::deviceUidFromRequest();
+
         // Comentario: Aplicar límite amplio por API key/IP para proteger endpoints de dispositivo.
+        RateLimiter::requireAllowance('device_api_ip', 240, 60);
+
+        // Comentario: Mantener el límite adicional por clave sin permitir rotación ilimitada por IP.
         RateLimiter::requireAllowance('device_api:' . hash('sha256', $providedKey), 120, 60);
 
         // Comentario: Rechazar clave vacía antes de comparar.
-        if ($providedKey === '') {
+        if (strlen($providedKey) < self::MINIMUM_KEY_LENGTH || strlen($providedKey) > 72 || in_array($providedKey, self::PLACEHOLDER_KEYS, true)) {
             JsonResponse::error('api_key_invalida', 'La clave API del dispositivo no es válida.', 401);
         }
 
@@ -48,6 +54,11 @@ final class ApiKeyValidator
     // Comentario: Validar API key configurada por entorno aplicando fallo cerrado.
     private static function isValidEnvironmentKey(string $providedKey): bool
     {
+        // Comentario: Reservar la clave compartida al desarrollo; producción requiere claves por dispositivo.
+        if (getenv('APP_ENV') === 'production') {
+            return false;
+        }
+
         // Comentario: Leer clave esperada exclusivamente desde entorno real o `.env` local cargado.
         $expectedKey = getenv('DEVICE_API_KEY');
 
@@ -114,17 +125,25 @@ final class ApiKeyValidator
     private static function deviceUidFromRequest(): string
     {
         // Comentario: Leer device_id desde query string si existe.
-        $queryDevice = Request::queryString('device_id');
+        $queryDevice = Request::queryString('device_id', 80);
 
-        // Comentario: Devolver valor de query si está presente.
-        if ($queryDevice !== '') {
+        // Comentario: Usar exclusivamente la query en peticiones de lectura.
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
             return $queryDevice;
         }
 
         // Comentario: Leer cuerpo JSON mediante caché centralizada de Request.
         $payload = Request::jsonBody();
 
-        // Comentario: Devolver device_id normalizado si existe.
-        return trim((string) ($payload['device_id'] ?? ''));
+        // Comentario: Validar el identificador que utilizará el endpoint para persistir datos.
+        $bodyDevice = Validation::requiredString($payload, 'device_id', 'El dispositivo es obligatorio.', 80);
+
+        // Comentario: Rechazar identidades contradictorias para impedir escritura entre dispositivos.
+        if ($queryDevice !== '' && $queryDevice !== $bodyDevice) {
+            JsonResponse::error('dispositivo_incoherente', 'La URL y el cuerpo deben identificar el mismo dispositivo.', 422);
+        }
+
+        // Comentario: Autenticar siempre el destino real de los datos.
+        return $bodyDevice;
     }
 }

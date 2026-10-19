@@ -49,6 +49,14 @@ if ($connection instanceof PDO) {
     }
 }
 
+// Comentario: Validar también las filas MySQL antes de entregarlas al puente.
+$config = BoilerConfigValidator::normalize($config);
+
+// Comentario: Evitar que el catálogo exceda el límite de respuesta del ESP32.
+if (Request::queryString('view') === 'firmware') {
+    JsonResponse::success(['config' => $config], $meta);
+}
+
 // Comentario: Responder configuración junto al catálogo validable.
 JsonResponse::success(
     [

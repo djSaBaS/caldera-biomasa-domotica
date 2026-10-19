@@ -21,8 +21,13 @@ $severity = Validation::allowedString($payload, 'severity', ['info', 'aviso', 'e
 // Comentario: Validar tipo de evento contra catálogo permitido.
 $eventType = Validation::allowedString($payload, 'event_type', ['estado', 'configuracion', 'orden', 'comunicacion', 'sensor', 'mantenimiento', 'sistema'], 'El tipo de evento no está permitido.');
 
-// Comentario: Obtener identificador opcional de dispositivo.
-$deviceUid = Validation::optionalString($payload, 'device_id', 80);
+// Comentario: Exigir el mismo destino identificado durante autenticación por clave.
+$deviceUid = Validation::requiredString($payload, 'device_id', 'El dispositivo es obligatorio.', 80);
+// Comentario: Una credencial de dispositivo no puede atribuir eventos al backend ni a otro origen.
+$payload['origin'] = 'firmware';
+// Comentario: Validar textos opcionales antes de que el repositorio los convierta a cadenas.
+$payload['title'] = Validation::optionalString($payload, 'title', 160) ?? 'Evento sin título';
+$payload['message'] = Validation::optionalString($payload, 'message', 5000) ?? '';
 
 // Comentario: Añadir tipo validado al payload normalizado.
 $payload['event_type'] = $eventType;
@@ -39,7 +44,12 @@ $meta = ['persistence' => 'skipped'];
 // Comentario: Guardar evento si hay base disponible.
 if ($connection instanceof PDO) {
     // Comentario: Resolver dispositivo interno si se informó UID.
-    $deviceId = $deviceUid !== null ? DeviceRepository::findIdByUid($connection, $deviceUid) : null;
+    $deviceId = DeviceRepository::findIdByUid($connection, $deviceUid);
+
+    // Comentario: No convertir un UID desconocido en un evento global sin dispositivo.
+    if ($deviceId === null) {
+        JsonResponse::error('dispositivo_no_registrado', 'El dispositivo no está registrado.', 404);
+    }
 
     // Comentario: Insertar evento validado.
     $eventId = EventRepository::store($connection, $deviceId, $payload);

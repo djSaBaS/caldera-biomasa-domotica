@@ -18,16 +18,12 @@ $payload = Request::jsonBody();
 // Comentario: Validar identificador de dispositivo obligatorio.
 $deviceUid = Validation::requiredString($payload, 'device_id', 'El campo device_id es obligatorio.', 80);
 
-// Comentario: Validar estado de caldera contra estados originales conocidos.
-$state = strtoupper(trim((string) ($payload['state'] ?? 'OFF')));
-
-// Comentario: Definir estados permitidos por la lógica original documentada.
-$allowedStates = ['OFF', 'CHECK', 'ACC', 'STB', 'NORMAL', 'MOD', 'MAN', 'SIC', 'SPE', 'ALT'];
-
-// Comentario: Rechazar estados desconocidos para no contaminar históricos.
-if (!in_array($state, $allowedStates, true)) {
-    JsonResponse::error('estado_invalido', 'El estado de caldera recibido no está permitido.', 422);
-}
+// Comentario: Cargar y ejecutar validación completa del contrato recibido.
+require_once __DIR__ . '/../app/Services/TelemetryValidator.php';
+// Comentario: Normalizar tipos, unidades, alias y estados antes de persistir.
+$payload = TelemetryValidator::normalize($payload);
+// Comentario: Reutilizar el estado canónico que llegará a MySQL.
+$state = $payload['state'];
 
 // Comentario: Intentar conexión a MySQL para persistencia real.
 $connection = Database::tryConnection();

@@ -12,6 +12,16 @@ Request::requireMethod(['GET', 'POST']);
 // Comentario: Detectar método actual para separar responsabilidades.
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// Comentario: Proteger los datos del panel con sesión y permisos vigentes.
+AuthorizationService::requireAuthenticatedUser();
+
+// Comentario: Exigir rol operativo y CSRF en escrituras desde el panel.
+if ($method === 'POST') {
+    AuthorizationService::requireAnyRole(['administrador', 'operador']);
+    // Comentario: Impedir modificaciones inducidas mediante una sesión ajena.
+    Csrf::requireValidToken();
+}
+
 // Comentario: Intentar conexión real a MySQL.
 $connection = Database::tryConnection();
 
@@ -33,6 +43,11 @@ if ($method === 'GET') {
             'persistence' => 'fallback_safe',
         ]
     );
+}
+
+// Comentario: No confirmar una escritura que no puede persistirse.
+if (!$connection instanceof PDO) {
+    JsonResponse::error('base_datos_no_disponible', 'La escritura requiere MySQL.', 503);
 }
 
 // Comentario: Leer alta de compra desde JSON.

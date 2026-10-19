@@ -39,11 +39,14 @@ final class TelemetryRepository
             'payload_json' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]);
 
+        // Comentario: Capturar el identificador antes del UPDATE, que reinicia lastInsertId en el driver MySQL.
+        $telemetryId = (int) $connection->lastInsertId();
+
         // Comentario: Actualizar última comunicación del dispositivo tras persistir telemetría.
         DeviceRepository::touch($connection, $deviceId);
 
         // Comentario: Devolver identificador generado por MySQL.
-        return (int) $connection->lastInsertId();
+        return $telemetryId;
     }
 
     // Comentario: Convertir números opcionales a decimal o nulo.

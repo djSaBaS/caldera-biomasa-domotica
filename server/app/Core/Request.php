@@ -36,16 +36,24 @@ final class Request
         }
 
         // Comentario: Leer cuerpo bruto desde el stream estándar de PHP una única vez.
-        $rawBody = file_get_contents('php://input');
+        $rawBody = file_get_contents('php://input', false, null, 0, 16385);
+
+        // Comentario: Limitar el cuerpo antes de decodificar para proteger memoria y profundidad.
+        if (!is_string($rawBody) || strlen($rawBody) > 16384) {
+            JsonResponse::error('cuerpo_demasiado_grande', 'El cuerpo supera el límite de 16 KiB.', 413);
+        }
 
         // Comentario: Decodificar JSON como array asociativo.
-        $payload = json_decode($rawBody ?: '', true);
+        $decoded = json_decode($rawBody, false, 32);
 
         // Comentario: Rechazar cuerpos vacíos o JSON inválido.
-        if (!is_array($payload)) {
+        if (!$decoded instanceof stdClass || json_last_error() !== JSON_ERROR_NONE) {
             // Comentario: Enviar respuesta homogénea para errores de validación.
             JsonResponse::error('json_invalido', 'El cuerpo de la petición debe ser JSON válido.', 400);
         }
+
+        // Comentario: Conservar objetos anidados como arrays después de comprobar la raíz.
+        $payload = json_decode($rawBody, true, 32, JSON_THROW_ON_ERROR);
 
         // Comentario: Guardar payload validado para lecturas posteriores dentro de la misma petición.
         $cachedPayload = $payload;
@@ -67,7 +75,15 @@ final class Request
         }
 
         // Comentario: Normalizar espacios laterales y limitar longitud sin requerir extensiones adicionales.
-        return substr(trim((string) $value), 0, $maxLength);
+        $text = trim((string) $value);
+
+        // Comentario: Evitar alias accidentales de identificadores truncados.
+        if (strlen($text) > $maxLength) {
+            JsonResponse::error('validacion_error', 'El parámetro de consulta es demasiado largo.', 422);
+        }
+
+        // Comentario: Devolver el valor íntegro validado.
+        return $text;
     }
 
     // Comentario: Obtener una cabecera HTTP de forma compatible con servidores comunes.

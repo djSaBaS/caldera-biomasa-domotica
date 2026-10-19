@@ -19,6 +19,11 @@ final class AuthService
             return;
         }
 
+        // Comentario: Rechazar identificadores de sesión impuestos y transporte mediante URL.
+        ini_set('session.use_strict_mode', '1');
+        // Comentario: Admitir sesiones únicamente mediante cookies.
+        ini_set('session.use_only_cookies', '1');
+
         // Comentario: Configurar cookie HTTP-only para reducir exposición ante scripts.
         session_set_cookie_params([
             'httponly' => true,
@@ -55,6 +60,12 @@ final class AuthService
         // Comentario: Regenerar identificador de sesión tras autenticación correcta.
         session_regenerate_id(true);
 
+        // Comentario: Invalidar el token CSRF anterior cuando cambia la identidad autenticada.
+        unset($_SESSION['csrf_token']);
+
+        // Comentario: Iniciar el límite de inactividad de la sesión autenticada.
+        $_SESSION['last_activity'] = time();
+
         // Comentario: Guardar datos mínimos de usuario en sesión.
         $_SESSION['user'] = [
             'id' => (int) $user['id'],
@@ -82,8 +93,42 @@ final class AuthService
             return null;
         }
 
+        // Comentario: Exigir actividad reciente; sesiones previas sin marca temporal se invalidan.
+        if (time() - (int) ($_SESSION['last_activity'] ?? 0) > 1800) {
+            self::logout();
+            return null;
+        }
+
+        // Comentario: Consultar el estado y rol actual para aplicar revocaciones inmediatamente.
+        $connection = Database::tryConnection();
+
+        // Comentario: Fallar cerrado si no se puede verificar la vigencia de los permisos.
+        if (!$connection instanceof PDO) {
+            JsonResponse::error('base_datos_no_disponible', 'No se puede verificar la sesión sin MySQL.', 503);
+        }
+
+        // Comentario: Leer únicamente la identidad pública de un usuario aún activo.
+        $statement = $connection->prepare("SELECT users.id, users.name, users.email, users.username, roles.code AS role FROM users INNER JOIN roles ON roles.id = users.role_id WHERE users.id = :id AND users.status = 'activo'");
+        // Comentario: Resolver el usuario mediante el identificador guardado tras el login.
+        $statement->execute(['id' => (int) ($user['id'] ?? 0)]);
+        // Comentario: Recuperar los permisos vigentes de la base de datos.
+        $current = $statement->fetch();
+
+        // Comentario: Invalidar sesiones de usuarios bloqueados, eliminados o desactivados.
+        if (!is_array($current)) {
+            self::logout();
+            return null;
+        }
+
+        // Comentario: Renovar actividad y permisos sin conservar roles obsoletos.
+        $_SESSION['last_activity'] = time();
+        // Comentario: Normalizar el identificador para mantener el contrato de identidad.
+        $current['id'] = (int) $current['id'];
+        // Comentario: Reemplazar la identidad almacenada por los datos vigentes.
+        $_SESSION['user'] = $current;
+
         // Comentario: Devolver datos mínimos de identidad.
-        return $user;
+        return $current;
     }
 
     // Comentario: Cerrar sesión actual de forma segura.

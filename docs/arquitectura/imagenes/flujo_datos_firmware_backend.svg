@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
-  <title id="title">Flujo real de datos firmware a backend</title>
+  <title id="title">Flujo de simulación y contrato firmware a backend</title>
   <desc id="desc">Diagrama lógico de telemetría y configuración: Arduino envía TEL al ESP32, ESP32 publica en API PHP, backend persiste en MySQL y devuelve configuración que ESP32 reenvía como CFG.</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
@@ -19,8 +19,8 @@
   <text x="50" y="52" class="title">Flujo firmware → API → MySQL y configuración offline</text>
   <rect x="55" y="130" width="230" height="130" class="box" />
   <text x="85" y="175" class="label">Arduino Mega</text>
-  <text x="85" y="204" class="small">Control local crítico</text>
-  <text x="85" y="230" class="small">Cache EEPROM</text>
+  <text x="85" y="204" class="small">Control local simulado</text>
+  <text x="85" y="230" class="small">EEPROM esquema 2</text>
   <rect x="365" y="130" width="230" height="130" class="box" />
   <text x="410" y="175" class="label">ESP32</text>
   <text x="410" y="204" class="small">Puente WiFi/HTTP</text>
@@ -39,10 +39,10 @@
   <path d="M905 175 L970 175" class="arrow" />
   <text x="916" y="158" class="small">persistir</text>
   <path d="M970 225 C840 330 620 330 595 225" class="back" />
-  <text x="690" y="350" class="small">GET config.php</text>
+  <text x="690" y="350" class="small">GET config.php (vista firmware)</text>
   <path d="M365 225 C260 335 170 335 170 260" class="back" />
   <text x="190" y="350" class="small">CFG: parámetros validados</text>
   <path d="M170 260 C235 430 415 430 480 260" class="back" />
-  <text x="255" y="455" class="small">ACK:{json} aplicado/rechazado</text>
-  <text x="55" y="515" class="small">Si no hay red, Arduino mantiene la última configuración válida en EEPROM y no depende de MySQL para seguridad local.</text>
+  <text x="255" y="455" class="small">ACK:{json} de alcance parcial</text>
+  <text x="55" y="515" class="small">Sin red, se conserva la configuración local. La lógica original y la seguridad física permanecen pendientes.</text>
 </svg>

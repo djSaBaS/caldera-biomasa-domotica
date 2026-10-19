@@ -255,7 +255,7 @@
     // Comentario: Mantener fallback local si no hay backend disponible.
     if (!respuesta) {
       if (estado) {
-        estado.textContent = 'Backend no disponible: usando datos demo locales.';
+        estado.textContent = 'Sin actualización: los datos visibles pueden ser demo o de una consulta anterior.';
       }
       return;
     }
@@ -266,7 +266,7 @@
     // Comentario: Mantener fallback si la API responde error o contrato inesperado.
     if (!respuesta.ok || !data?.success || !data?.data) {
       if (estado) {
-        estado.textContent = data?.error?.message || 'Dashboard API no disponible: usando fallback.';
+        estado.textContent = `Sin actualización: ${data?.error?.message || 'no se pudo consultar la caldera.'}`;
       }
       return;
     }
@@ -285,7 +285,10 @@
 
     // Comentario: Informar origen de datos al usuario.
     if (estado) {
-      estado.textContent = `Datos cargados desde ${data.data.source || 'backend'} · ${data.data.generated_at || ''}`;
+      const calidad = { sin_muestra: 'Sin muestra de la caldera; datos de demostración', simulada: 'Muestra simulada', registrada: 'Última muestra registrada' };
+      // Comentario: Mostrar explícitamente simulación y antigüedad sin presentarlas como estado en directo.
+      const edad = Number.isFinite(data.data.sample_age_seconds) ? ` · recibida hace ${data.data.sample_age_seconds} s` : '';
+      estado.textContent = `${calidad[data.data.telemetry_status] || 'Calidad de muestra desconocida'}${edad}`;
     }
   };
 

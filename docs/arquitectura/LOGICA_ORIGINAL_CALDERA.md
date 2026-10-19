@@ -1,83 +1,12 @@
 # Lógica original de la caldera
 
-Este documento resume la lógica funcional que debe respetarse a partir de los manuales de la caldera Pasqualicchio / CS Marina.
+La reconstrucción documental de la base 0.4.7 está **INCOMPLETA**. No está validada para funcionamiento físico.
 
-## Estados funcionales
+- [Fuentes disponibles y contradicciones](../auditoria/FUENTES_ORIGINALES.md): Pasqualicchio, CTP UTENTE/TECNICO y comparación SY325 Pellet; ficha SCHEDA independiente y revisión instalada sin acreditar.
+- [Parámetros originales con función, rango, fase y página](../auditoria/PARAMETROS_ORIGINALES.md).
+- [Matriz de los once estados y transiciones pendientes](../auditoria/MAQUINA_ESTADOS.md), incluyendo REC.
+- [Contrato de simulación implementado](API_CONTRACT.md): diferenciar consignas del proyecto de límites originales.
 
-### OFF
+CL y CP son tiempos independientes. ON=OFF es una preferencia del proyecto. MAN puede alimentar combustible: el CTP técnico, páginas impresas 35–36, describe espera T04 en minutos, ventana T05 en segundos y dentro de ella CP09 seguido de CL09; T05=CP09+CL09. No debe tratarse como NORMAL ni como una fase que nunca carga.
 
-Caldera apagada.
-
-### CHECK / Chc
-
-Fase inicial de chequeo y limpieza. Puede funcionar el ventilador para limpiar cámara.
-
-### ACC
-
-Fase de encendido. Intervienen encendedor/bujía, ventilación y aporte controlado de combustible según parámetros.
-
-### STB
-
-Fase de estabilización de llama.
-
-### NORMAL
-
-Funcionamiento normal. La caldera trabaja con la potencia configurada para alcanzar temperatura.
-
-### MOD
-
-Modulación. Se reduce aporte de combustible y aire.
-
-### MAN
-
-Automantenimiento. La caldera se mantiene en espera, normalmente sin aporte continuo de combustible.
-
-### SIC
-
-Seguridad. Bloqueo o parada por condición peligrosa.
-
-### SPE
-
-Apagado controlado. Puede mantenerse ventilación y bomba durante el enfriamiento.
-
-### ALT
-
-Alarma. Estado asociado a una causa concreta.
-
-## Regla crítica del sinfín
-
-La carga de combustible se realiza por tiempo.
-
-```text
-Sinfín ON  = X segundos
-Sinfín OFF = X segundos
-```
-
-La pausa debe ser siempre igual al tiempo de carga.
-
-No se debe implementar un PID que active el sinfín directamente por temperatura. La temperatura puede condicionar el estado de la caldera, pero no debe convertir el sinfín en una salida proporcional directa.
-
-## Parámetros configurables
-
-- Tiempo de ciclo del sinfín.
-- Porcentaje ventilador primario.
-- Porcentaje ventilador secundario.
-- Temperatura de activación de bomba.
-- Temperatura objetivo / mantenimiento.
-- Límites de seguridad.
-- Timeouts de encendido.
-- Tiempo de post-ventilación.
-
-## Alarmas conocidas
-
-- Fallo de encendido.
-- Apagado accidental.
-- Sobretemperatura.
-- Sondas fuera de rango.
-- Falta de combustible.
-- Puerta abierta.
-- Termostato de seguridad activado.
-
-## Criterio de diseño
-
-Si hay conflicto entre comodidad y seguridad, gana seguridad.
+El estado MAN y el modo Manu/manual son conceptos distintos. No se debe convertir una descripción resumida, un ejemplo térmico ni una contradicción de traducción en una guarda ejecutable sin evidencia adicional.

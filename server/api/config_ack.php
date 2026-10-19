@@ -21,6 +21,15 @@ $deviceUid = Validation::requiredString($payload, 'device_id', 'El campo device_
 // Comentario: Validar resultado informado por firmware.
 $status = Validation::allowedString($payload, 'status', ['aplicada', 'rechazada'], 'El ACK debe indicar status aplicada o rechazada.');
 
+// Comentario: Conservar la versión candidata y el alcance de aplicación sin confundirlos con toda la configuración.
+$version = Validation::decimalRange($payload, 'config_version', $status === 'aplicada' ? 1 : 0, 4294967295, 'Versión de ACK inválida.');
+// Comentario: Rechazar fracciones para mantener la correlación con el contador uint32 del firmware.
+if (floor($version) !== $version) {
+    JsonResponse::error('validacion_error', 'La versión debe ser entera.', 422);
+}
+// Comentario: Validar el diagnóstico opcional para no convertir arrays en texto.
+$message = Validation::optionalString($payload, 'message', 255) ?? '';
+
 // Comentario: Intentar persistir ACK como evento de configuración.
 $connection = Database::tryConnection();
 
@@ -38,7 +47,7 @@ if ($connection instanceof PDO) {
             'severity' => $status === 'aplicada' ? 'info' : 'aviso',
             'origin' => 'firmware',
             'title' => 'ACK de configuración ' . $status,
-            'message' => (string) ($payload['message'] ?? ''),
+            'message' => 'config_version=' . (int) $version . '; scope=control_subset; ' . $message,
         ]);
 
         // Comentario: Informar evento persistido.
@@ -51,6 +60,7 @@ JsonResponse::success(
     [
         'device_id' => $deviceUid,
         'status' => $status,
+        'config_version' => (int) $version,
         'message' => 'ACK de configuración recibido.',
     ],
     $meta,

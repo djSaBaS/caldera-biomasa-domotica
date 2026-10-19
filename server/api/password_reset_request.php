@@ -21,6 +21,9 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // Comentario: Limitar solicitudes de restablecimiento por email/IP para evitar abuso.
+RateLimiter::requireAllowance('password_reset_ip', 30, 900);
+
+// Comentario: Mantener el límite específico además del límite global por IP.
 RateLimiter::requireAllowance('password_reset:' . strtolower($email), 3, 900);
 
 // Comentario: Intentar conexión real a MySQL.

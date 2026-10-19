@@ -18,7 +18,7 @@ Se usa PHP + MySQL porque es el stack dominado por el desarrollador principal.
 
 ## 0005 — Sinfín temporizado
 
-El sinfín no se controla con PID directo. Se respeta ciclo ON/OFF con tiempos iguales.
+El sinfín se controla por tiempos independientes de trabajo y pausa por fase. ON=OFF se conserva como preferencia legada del proyecto, no como regla del fabricante. MAN usa una ventana T04/T05 con CP09 y CL09 según CTP técnico pp. 35–36.
 
 ## 0006 — Autenticación PHP con sesiones en Sprint 02
 
@@ -33,7 +33,7 @@ Se decide que los endpoints intenten persistir en MySQL, pero respondan de forma
 Se decide mantener `DEVICE_API_KEY` para desarrollo rápido y añadir validación contra `devices.api_key_hash` para preparar despliegues con claves por dispositivo sin guardar secretos en claro.
 
 
-## 0007 — Administración web con sesión, roles y CSRF
+## 0009 — Administración web con sesión, roles y CSRF
 
 Se separan los endpoints de dispositivo, autenticados por API key, de los endpoints del panel web, autenticados por sesión PHP, rol funcional y token CSRF.
 
@@ -42,10 +42,38 @@ Motivo: las operaciones de usuarios, dispositivos y comandos remotos modifican e
 Consecuencia: cualquier formulario web mutable debe enviar `X-CSRF-TOKEN`, y los comandos quedan auditados en MySQL antes de que el firmware pueda consultarlos.
 
 
-## 0008 — Rate limiting local en puntos sensibles
+## 0010 — Rate limiting local en puntos sensibles
 
 Se añade un limitador por fichero para login, restablecimiento de contraseña y endpoints de dispositivo.
 
 Motivo: antes de exponer una API administrativa conviene reducir fuerza bruta y abuso accidental sin introducir dependencias externas todavía.
 
 Consecuencia: el mecanismo es suficiente para desarrollo y banco de pruebas, pero en producción debería sustituirse o reforzarse con Redis, proxy inverso o reglas del servidor web.
+
+## 0011 — Auditoría documental abierta
+
+UTENTE y su esquema impreso 27/PDF 28 ya están contrastados. Se mantiene el bloque 1 incompleto hasta acreditar la revisión instalada/ficha independiente, resolver contradicciones y completar las guardas originales. TECNICO y SY325 Pellet son fuentes adicionales con límites diferentes. No se avanza al bloque 2. Los documentos de sprints anteriores son históricos.
+
+## 0012 — Simulación obligatoria y comandos sin ejecución
+
+Ambos sketches exigen simulación en compilación. START permanece bloqueado aunque exista la antigua bandera; los demás comandos solo se registran. GET de cola no acredita entrega. La alarma no se autorrearma. Esta decisión corrige comportamientos verificablemente engañosos sin activar actuadores.
+
+## 0013 — Contrato 1.1 y perfiles por fase
+
+Se mantienen nombres legados y se añaden pares por fase con unidades explícitas. Configuración usa contador uint32, EEPROM esquema 2 y migración del layout AVR v1. Backend, parser UART y parser JSON comprueban los mismos dominios; no se aceptan valores truncados. Los campos aún no aplicados se enumeran y el ACK tiene alcance parcial.
+
+## 0014 — Permisos vigentes y raíz pública limitada
+
+Revalidar rol/estado de sesión en MySQL permite revocar accesos. La clave compartida es exclusiva de desarrollo; producción exige hash por dispositivo. Solo se publica server/public mediante router; no se expone app/sql/storage/.env. Perdida de verificación de sesión o de limitador falla cerrado.
+
+## 0015 — Conservar fuentes y separar variantes
+
+Se guardan íntegros los documentos aportados por petición del propietario, con procedencia, paginación y SHA-256. El contexto recuperado es evidencia secundaria y sus recomendaciones no son instrucciones de ejecución. El propietario confirma un sinfín instalado y capacidad de dos en la placa. CTP CL/CP, MAN y bornes se mantienen separados del programa genérico Pellet C40; un código semejante no acredita unidades, guardas ni cableado equivalentes.
+
+## 0016 — Diario EEPROM con copia anterior
+
+La actualización escribe la ranura inactiva CBJ1 y marca el registro válido al final, con CRC32 y lectura de verificación. La configuración nueva solo se activa y confirma después de persistirla. Se conserva el área legada para migración v1/v2 y no se escriben repeticiones ya durables. Las pruebas inyectan cortes/corrupción en cada frontera; el ensayo eléctrico real sigue pendiente. CRC32 detecta corrupción accidental, no autentica una modificación maliciosa de EEPROM.
+
+## 0017 — Edad local de muestra y reintentos acotados
+
+ESP32 admite una muestra pendiente hasta quince segundos desde UART y la consume al confirmar persistencia; el vencimiento es definitivo y no vuelve a generar demo tras haber recibido Mega. Este límite pertenece al proyecto y no representa la edad de adquisición del sensor. Los intentos de ACK se espacian cinco segundos. Secuencia/idempotencia durable y alarmas de enlace requieren diseño posterior; la red de operación permanece bloqueada.
