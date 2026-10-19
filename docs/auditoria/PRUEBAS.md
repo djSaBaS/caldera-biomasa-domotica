@@ -17,10 +17,11 @@ Fecha: 2026-10-19. Código de la rama `auditoria/bloque-1-base-tecnica`, revisi�
 | Compilación ESP32 | PASA | Core/ArduinoJson fijados; 350692 bytes de flash y 28428 bytes de RAM global; sin WiFi real ni comandos |
 | Git diff --check | PASA | Sin errores de whitespace |
 | LeakSanitizer | NO COMPROBADO | El host instrumentado usa ptrace; LSan falló por incompatibilidad del entorno y se desactivó en el runner nativo. AddressSanitizer y UndefinedBehaviorSanitizer siguen activos |
-| Sonar, navegador funcional, MySQL 8.4 y Actions remotos | NO COMPROBADO | No se equiparan sintaxis/compilación/MariaDB con estas comprobaciones; consultar estado remoto de la PR |
+| GitHub Actions / MySQL 8.4 / PHP 8.2 / Node 22 | PASA | [CI #9](https://github.com/djSaBaS/caldera-biomasa-domotica/actions/runs/39226677592) finalizó success sobre el código `551e110cb7545bd80af18b208e078435e9d961d8`: puerta de calidad, migración/integración, firmware y recorridos HTTP |
+| Sonar y navegador funcional | NO COMPROBADO | No se equiparan sintaxis y comprobaciones HTTP con estas herramientas |
 | Hardware, sensores, carga real, corte de energía, watchdog y combustión | NO COMPROBADO | Fuera de la simulación autorizada; siguen siendo bloqueos críticos |
 
-Entorno local: PHP 8.4.26 con PDO MySQL, MariaDB 11.8.6, Node 24.19.0, g++ 14.2.0; Arduino CLI 1.5.1, Arduino AVR 1.8.8, ESP32 3.3.12 y ArduinoJson 7.4.2. CI declara PHP 8.2, Node 22 y MySQL 8.4, por lo que su ejecución debe comprobar compatibilidad adicional.
+Entorno local: PHP 8.4.26 con PDO MySQL, MariaDB 11.8.6, Node 24.19.0, g++ 14.2.0; Arduino CLI 1.5.1, Arduino AVR 1.8.8, ESP32 3.3.12 y ArduinoJson 7.4.2. CI #9 verificó además PHP 8.2, Node 22 y MySQL 8.4. El registro posterior a esa ejecución modifica únicamente documentación, sin cambios en el código validado.
 
 Las pruebas nativas compilan `ControlModel.h`, `ConfigJson.h` y el sketch Mega de producción con stubs de UART/reloj/EEPROM. No copian algoritmos de control en una implementación de prueba distinta. Se ejecutan con `-Wall -Wextra -Werror -fsanitize=address,undefined`. La migración de EEPROM verifica un layout legado de 20 bytes; no demuestra tolerancia de una escritura física interrumpida.
 

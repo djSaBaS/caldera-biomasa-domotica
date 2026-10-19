@@ -42,7 +42,7 @@ Las correcciones de comportamiento legado se justifican por el defecto observado
 | B03: control original incompleto | La FSM es demostración temporizada. Faltan guardas de encendido/estabilización/llama, REC, SIC/SPE, antihielo, entradas externas, segundo sinfín y recetas. No basta enumerar once estados. |
 | B04: seguridad de operación | Falta verificación física de sondas, termostato, cableado, potencia, bomba, caída eléctrica, watchdog, retorno de llama y actuadores. El inventario es declarado, no comprobado. |
 | B05: enlace y comandos de operación | TLS/CA, antigüedad de muestras a nivel local, cola durable e idempotencia, ejecución y ACK de comandos no implementados. En EEPROM falta doble slot y prueba de escritura interrumpida. |
-| B06: garantías de calidad restantes | Sonar y pruebas de navegador/despliegue no ejecutados. MariaDB local no acredita MySQL 8.4 ni cadena física; CI remota debe revisarse en la PR. |
+| B06: garantías de calidad restantes | Sonar y pruebas de navegador/despliegue no ejecutados. La CI #9 verificó también MySQL 8.4; ninguna prueba de host acredita la cadena física. |
 
 La configuración HTTP todavía incluye `mode`, timeout y postventilación no aplicados por Mega. Su ausencia de aplicación se expone en el contrato y el ACK queda limitado a `control_subset`. Los porcentajes de ventilación del simulador no reconstruyen UC/UA por fase. Los datos de panel y gráficas pueden ser demo o muestras antiguas; se indica su calidad.
 
@@ -62,9 +62,10 @@ La configuración HTTP todavía incluye `mode`, timeout y postventilación no ap
 | Contratos del subconjunto implementado coherentes y versionados | PASA | HTTP/UART 1.1, EEPROM 2, SQL 0.4.7, compatibilidad y campos no aplicados explícitos |
 | Integración física ESP32↔Mega↔backend↔MySQL completa | NO COMPROBADO | Compilación y simulación de parsers; sin placas ni red de operación |
 | Pruebas automatizadas locales ejecutadas y resultados documentados | PASA | [Pruebas](PRUEBAS.md): PHP/JS, 62 comprobaciones nativas, HTTP/MySQL, migración y compilación |
-| Sonar y MySQL 8.4 remoto | NO COMPROBADO | No se ejecutó Sonar; estado de Actions se consulta en la PR |
+| MySQL 8.4 y Actions remotos | PASA | [CI #9](https://github.com/djSaBaS/caldera-biomasa-domotica/actions/runs/39226677592), success sobre el código 551e110 |
+| Sonar y navegador/despliegue | NO COMPROBADO | No se ejecutaron estas herramientas ni un despliegue |
 | README, version, CHANGELOG y documentación técnica actualizados | PASA | Revisión 0.4.7 con bloqueos, arquitectura, inventario, decisiones y migración |
-| Rama independiente y Pull Request revisable | PASA | Rama de auditoría; enlace de PR en la entrega del chat |
+| Rama independiente y Pull Request revisable | PASA | Rama de auditoría; [PR #2 en borrador](https://github.com/djSaBaS/caldera-biomasa-domotica/pull/2) |
 | Sin habilitar salidas físicas y sin avanzar al bloque 2 | PASA | `static_assert(SIMULATION_MODE)` y ausencia de escrituras GPIO |
 | Bloque 1 completamente satisfecho | FALLA | Dependencias originales y defectos críticos abiertos |
 

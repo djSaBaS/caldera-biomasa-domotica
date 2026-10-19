@@ -18,7 +18,7 @@ flowchart LR
 | Conectividad | Parser JSON tipado, configuración compacta persistida, reenvío periódico y ACK parcial | TLS y CA, antigüedad de datos, cola durable, comandos con ACK y deduplicación |
 | Backend | Roles vigentes, sesión/CSRF, claves por UID, validación, repositorios, migración SQL | ACL por dispositivo si cambia el modelo de instalación; despliegue y operación seguros |
 | Interfaz | Login, consulta de snapshot, escape HTML, calidad y edad de muestra | Pantallas administrativas funcionales completas, control real y pruebas de navegador |
-| Persistencia | Esquema InnoDB y migración 0.4.7, JSON de evidencia, relaciones FK | Migración probada también en MySQL 8.4 remoto, retención, copias/restauración y trazabilidad integral de aplicación de configuración |
+| Persistencia | Esquema InnoDB y migración 0.4.7, JSON de evidencia, relaciones FK | Retención, copias/restauración y trazabilidad integral de aplicación de configuración; migración ya probada en MariaDB local y MySQL 8.4 CI |
 
 La raíz HTTP es `server/public`; el router publica endpoints de `server/api` por lista de rutas acotada. `app`, `sql`, `.env` y `storage` no forman parte de la raíz pública. La web se sirve separadamente durante desarrollo con CORS limitado a los orígenes locales documentados; las cookies Secure requieren configurar correctamente HTTPS en el despliegue.
 
