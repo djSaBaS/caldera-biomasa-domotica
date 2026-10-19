@@ -1,0 +1,2 @@
+# Comentario: Fijar cliente CDP opcional; no es dependencia del servidor ni del firmware.
+websockets==16.0

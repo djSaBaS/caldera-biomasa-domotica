@@ -30,6 +30,7 @@
 - Aclarados CHC→ACC, MAN según P34, REC y enfriamiento independiente V3; documentadas contradicciones de SPE, A06, UA05, P03/P04 y rangos/unidades.
 - Diario EEPROM CBJ1 de dos ranuras con CRC32, marcador final y lectura de verificación; no activar ni confirmar candidatos que no se persistieron. Migración v1/v2 legado y pruebas de cortes/corrupción/rollover.
 - ESP32 descarta telemetría con más de 15 s desde recepción local y no reenvía una muestra ya persistida. Reintento de ACK limitado a cinco segundos y URL de ejemplo corregida a `/api` bajo raíz pública.
+- CI #11 satisfactoria con MySQL 8.4 y ambos firmwares; recorrido local opcional de Chromium con nueve aserciones de login/DOM/cookie/CSRF/MySQL, sin CDN ni validación visual.
 - Pruebas nativas con 48 comprobaciones de control/protocolo/frescura, 26 del sketch Mega y 1077 de almacenamiento con fallos inyectados; no acreditan hardware ni cierran el bloque.
 
 ## [0.4.6-dashboard-protegido-mysql-ci] - 2026-05-15

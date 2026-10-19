@@ -44,7 +44,7 @@ Las correcciones de comportamiento legado se justifican por el defecto observado
 | B03: control original incompleto | La FSM es demostración temporizada. Faltan guardas de encendido/estabilización/llama, REC, SIC/SPE, antihielo, entradas externas, V3/T51 y recetas. El segundo canal es opcional: el propietario confirma solo un sinfín instalado. No basta enumerar once estados. |
 | B04: seguridad de operación | Falta verificación física de sondas, termostato, cableado, potencia, bomba, caída eléctrica, watchdog, retorno de llama y actuadores. El inventario combina manuales y declaración del propietario; no está comprobado físicamente. |
 | B05: enlace y comandos de operación | **Resueltos diario EEPROM y caducidad local de telemetría en host.** Pendientes TLS/CA, edad de adquisición de sensor, secuencia/idempotencia, cola durable, ejecución/ACK de comandos y ensayo físico de escritura interrumpida. |
-| B06: garantías de calidad restantes | Sonar y pruebas de navegador/despliegue no ejecutados. Las CI #9/#10 verificaron la revisión anterior también con MySQL 8.4; la ampliación requiere nueva ejecución; ninguna prueba de host acredita la cadena física. |
+| B06: garantías de calidad restantes | CI #11 verifica la ampliación con MySQL 8.4 y ambos firmwares. Nueve aserciones de navegador básico pasan localmente. Sonar, diseño visual completo, CDN/gráficas y despliegue no comprobados; ninguna prueba de host acredita la cadena física. |
 
 La configuración HTTP todavía incluye `mode`, timeout y postventilación no aplicados por Mega. Su ausencia de aplicación se expone en el contrato y el ACK queda limitado a `control_subset`. Los porcentajes de ventilación del simulador no reconstruyen UC/UA por fase. Los datos de panel y gráficas pueden ser demo o muestras antiguas; se indica su calidad.
 
@@ -65,8 +65,9 @@ La configuración HTTP todavía incluye `mode`, timeout y postventilación no ap
 | Contratos del subconjunto implementado coherentes y versionados | PASA | HTTP/UART 1.1, EEPROM lógico 2 / diario CBJ1, SQL 0.4.7, compatibilidad y campos no aplicados explícitos |
 | Integración física ESP32↔Mega↔backend↔MySQL completa | NO COMPROBADO | Compilación y simulación de parsers; sin placas ni red de operación |
 | Pruebas automatizadas locales ejecutadas y resultados documentados | PASA | [Pruebas](PRUEBAS.md): PHP/JS, 1151 comprobaciones nativas, integridad de cinco fuentes, 43 regresiones HTTP/MySQL, migración y compilación |
-| MySQL 8.4 y Actions remotos de esta ampliación | NO COMPROBADO | Nueva ejecución pendiente de publicación; CI #9/#10 anteriores pasaron |
-| Sonar y navegador/despliegue | NO COMPROBADO | No se ejecutaron estas herramientas ni un despliegue |
+| MySQL 8.4 y Actions remotos de esta ampliación | PASA | [CI #11](https://github.com/djSaBaS/caldera-biomasa-domotica/actions/runs/39256861998), success sobre d533eb1; runtime de la ampliación verificado |
+| Recorrido básico de navegador | PASA | Nueve aserciones locales en Chromium: login, cookie, CSRF, navegación DOM y dashboard MySQL; sin CDN ni validación visual |
+| Sonar, diseño visual/CDN/gráficas y despliegue | NO COMPROBADO | No ejecutados; el recorrido básico no acredita esas áreas |
 | README, version, CHANGELOG y documentación técnica actualizados | PASA | Revisión 0.4.7 ampliada con originales conservados, variantes, bloqueos, arquitectura, inventario y contratos |
 | Rama independiente y Pull Request revisable | PASA | Rama de auditoría; [PR #2 en borrador](https://github.com/djSaBaS/caldera-biomasa-domotica/pull/2) |
 | Sin habilitar salidas físicas y sin avanzar al bloque 2 | PASA | `static_assert(SIMULATION_MODE)` y ausencia de escrituras GPIO |
@@ -82,6 +83,6 @@ La configuración HTTP todavía incluye `mode`, timeout y postventilación no ap
 2. Obtener SCHEDA independiente o una fuente técnica inequívoca de esa revisión; resolver A06, UA05, P03/P04 y SPE con evidencia aplicable. El esquema CTP ya está disponible, por lo que no se sigue solicitando el UTENTE.
 3. Completar y verificar la FSM local con guardas/temporizadores de llama, entradas, SIC/SPE, antihielo, REC y V3 antes de que pueda sustituir a la centralita. La actual demostración temporizada se conserva claramente identificada y bloqueada para operación; sustituirla por reglas mezcladas de G crearía nuevos defectos.
 4. Diseñar y probar TLS, edad real de sensores, watchdog, comandos con ACK e idempotencia y protección física. No hay autorización para conectar cargas; estas verificaciones necesitan un banco y un alcance posterior explícito, sin inferir autorización de la mera lectura de los manuales.
-5. Ejecutar los controles de navegador/Sonar y validar despliegue cuando exista ese entorno. Los resultados HTTP y del compilador no sustituyen esas herramientas.
+5. Completar Sonar, validación visual responsive/CDN/gráficas y despliegue cuando exista ese entorno. El navegador básico ya está probado; no equivale a esos controles.
 
 La tabla no cambia a PASA por disponer de más documentos de una familia. Se ha completado el trabajo verificable de esta ampliación, sin declarar completado el bloque ni avanzar al bloque 2.
